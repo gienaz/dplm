@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Editor</title></style>
+</head>
+<link rel="stylesheet" href="model_editor.css">
+<body>
+
+  <div class="header"> <!--UpperTab-->
+    <div class="cont">
+      <div>Currently editing</div>
+      <div class="Model_name"><b>Tutto mondo V1.</b></div>
+    </div>
+  </div>
+
+  <div class="preferences"> <!--Preferences-->
+    <div class="tabs">
+      <div class="tab-headers">
+        <button class="tab-header active" data-tab="tab1">Scene</button>
+        <button class="tab-header" data-tab="tab2">Lighting</button>
+        <button class="tab-header" data-tab="tab3">Materials</button>
+        <button class="tab-header" data-tab="tab4">Post Processing</button>
+        <button class="tab-header" data-tab="tab5">Animations</button>
+        <button class="tab-header" data-tab="tab6">AR/VR</button>
+      </div>
+      <div class="tab-content active" id="tab1">
+        <div class="preferences-block-simple">
+              <div class="accordion-header">
+                <div class="inset">Transform</div>
+              </div>
+              <div class="accordion-content">
+                <p>Location</p>
+                <p>Rotation</p>
+                <p>Scale</p>
+              </div>
+
+        </div>
+      </div>
+      <div class="tab-content" id="tab2">
+        <p>Lightning.</p>
+        <p>Lightning.</p>
+        <p>Lightning.</p>
+      </div>
+      <div class="tab-content" id="tab3">
+        <p>Materials.</p>
+      </div>
+      <div class="tab-content" id="tab4">
+        <p>PostProcessing.</p>
+      </div>
+      <div class="tab-content" id="tab5">
+        <p>Animations WIP.</p>
+      </div>
+      <div class="tab-content" id="tab6">
+        <p>Ar/Vr WIP.</p>
+      </div>
+    </div>
+  </div>
+  
+  
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.176.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.176.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="Edit_Script.js"></script>
+  <script src="Edit_UI.js"></script>
+</body>
+</html>
+
+<!--
+SCENE:
+General: position,rotation, scale.
+Camera: Fov, Near Clipping Distance.
+Wireframe - on/off
+Background - on/off, color
+
+LIGHTING:
+Enviroment(hdri) - orientation,brightness.
+Shadow - on/off, intencity, bias.
+
+MATERIALS:
+*materials_list*
+PBR Basecolor, Metallic, Roughness, Normal, Emission, Opacity
+
+POST PROCESSING FILTERS:
+ssr
+ssao
+grain
+dof
+sharpness
+vignette
+bloom
+color balance
+
+ANIMATIONS
+ "WIP"
+
+AR/VR
+ "WIP"
+
+-->

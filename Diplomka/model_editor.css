@@ -1,0 +1,133 @@
+html, body{
+    padding:0;
+    margin:0;
+   overflow: hidden;
+   color:whitesmoke;
+   font-family: 'Tahoma';
+}
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+.preferences{
+    width: 500px;
+    height: calc(100% - 110px);
+    position: absolute;
+    left: 20px;
+    top: 90px;
+    background-color: rgb(24, 24, 24);
+    border-radius: 10px;
+}
+.header{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 70px;
+    background-color: rgb(24, 24, 24);
+    display: flex;
+    justify-content: center;
+
+    .cont{
+        height: 70px;
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        font-size: 25px;
+    }
+
+}
+ 
+
+.tabs {
+  width: 100%;
+  height: 100%;
+  .tab-headers {
+    display: flex;
+    border-bottom: 1px solid gray;
+    justify-content: space-between;
+    
+  }
+  .tab-header {
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    width: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: none;
+    font-size: 14px;
+    outline: none;
+    color: gray;
+    
+  }
+  .tab-header.active {
+    border-bottom: 2px solid #007bff;
+    color: #007bff;
+    font-weight: bold;
+  }
+  .tab-content {
+    display: none;
+  }
+  .tab-content.active {
+    display: block;
+    
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 20px;
+  }
+}
+  
+  
+  .preferences-block-simple {
+    width: 450px;
+    color: black;
+    .accordion-header {
+      width: 100%;
+      font-size: 16px;
+      background-color: rgb(40, 40, 40);
+      border-radius: 10px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      transition: border-radius 0.3s step-end;
+      .inset{
+        width: 420px;
+        margin-left: 15px;
+      }
+    }
+    
+    .accordion-header.active {
+      border-radius: 10px  10px 0px 0px;
+      transition: border-radius 0.3s step-start;
+    }
+    
+    .accordion-content {
+      max-height: 0;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: rgb(40, 40, 40);
+      border-radius: 0 0 10px 10px;
+      color: black;
+      width: 450px;
+  
+      gap: 10px;
+      transition: 0.3s linear;
+    }
+    
+    .accordion-content.open {
+      
+      min-height: 100px;
+      max-height: 100vh;
+    }
+  }
+  

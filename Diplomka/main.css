@@ -1,0 +1,16 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    background: #19171f;
+    font-family: sans-serif;
+    overflow: hidden;
+  }
+  .editor-embed {
+    width: 100vw;
+    padding: 0;
+    margin: 0;
+    height: 100vh;
+    border: none;
+    border-radius: 5px;
+    display: block;
+  }
