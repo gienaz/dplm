@@ -8,6 +8,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 // Сцена и камера
+const models = [];
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x010101);
 
@@ -41,6 +42,7 @@ loader.load(
   (gltf) => {
     const model = gltf.scene;
     scene.add(model);
+    models.push(model);
 
     // Если есть анимации, запускаем первую
     if (gltf.animations && gltf.animations.length) {
@@ -72,3 +74,32 @@ loader.load(
   });
 
   
+  function syncSliderAndNumber(slider, number, callback) {
+    slider.addEventListener('input', () => {
+      number.value = slider.value;
+      callback(parseFloat(slider.value));
+    });
+    number.addEventListener('input', () => {
+      slider.value = number.value;
+      callback(parseFloat(number.value));
+    });
+  }
+
+
+  function applyToModels(callback) {
+    models.forEach(model => callback(model));
+  }
+  
+  syncSliderAndNumber(posX, posXn, v => applyToModels(obj => obj.position.x = v));
+  syncSliderAndNumber(posY, posYn, v => applyToModels(obj => obj.position.y = v));
+  syncSliderAndNumber(posZ, posZn, v => applyToModels(obj => obj.position.z = v));
+  
+  // Rotation (градусы -> радианы)
+  syncSliderAndNumber(rotX, rotXn, v => applyToModels(obj => obj.rotation.x = v * Math.PI / 180));
+  syncSliderAndNumber(rotY, rotYn, v => applyToModels(obj => obj.rotation.y = v * Math.PI / 180));
+  syncSliderAndNumber(rotZ, rotZn, v => applyToModels(obj => obj.rotation.z = v * Math.PI / 180));
+  
+  // Scale
+  syncSliderAndNumber(sclX, sclXn, v => applyToModels(obj => obj.scale.x = v));
+  syncSliderAndNumber(sclY, sclYn, v => applyToModels(obj => obj.scale.y = v));
+  syncSliderAndNumber(sclZ, sclZn, v => applyToModels(obj => obj.scale.z = v));
