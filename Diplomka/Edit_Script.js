@@ -47,9 +47,9 @@ loader.load(
     // Если есть анимации, запускаем первую
     if (gltf.animations && gltf.animations.length) {
       const mixer = new THREE.AnimationMixer(model);
-      mixer.clipAction(gltf.animations[0]).play();
+     /* mixer.clipAction(gltf.animations[0]).play();
       mixer.clipAction(gltf.animations[1]).play();
-      mixer.clipAction(gltf.animations[2]).play();
+      mixer.clipAction(gltf.animations[2]).play();*/
 
       // Обновление анимации в рендер-цикле
       function animate() {
@@ -90,6 +90,8 @@ loader.load(
     models.forEach(model => callback(model));
   }
   
+//Position
+
   syncSliderAndNumber(posX, posXn, v => applyToModels(obj => obj.position.x = v));
   syncSliderAndNumber(posY, posYn, v => applyToModels(obj => obj.position.y = v));
   syncSliderAndNumber(posZ, posZn, v => applyToModels(obj => obj.position.z = v));
@@ -103,3 +105,162 @@ loader.load(
   syncSliderAndNumber(sclX, sclXn, v => applyToModels(obj => obj.scale.x = v));
   syncSliderAndNumber(sclY, sclYn, v => applyToModels(obj => obj.scale.y = v));
   syncSliderAndNumber(sclZ, sclZn, v => applyToModels(obj => obj.scale.z = v));
+
+//FOV
+const fovSlider = document.getElementById('fov');
+const fovNumber = document.getElementById('fovn');
+const nearSlider = document.getElementById('ncd');
+const nearNumber = document.getElementById('ncdn');
+
+// Синхронизация FOV
+function setFOV(val) {
+  camera.fov = parseFloat(val);
+  camera.updateProjectionMatrix(); // обязательно!
+}
+fovSlider.addEventListener('input', e => {
+  fovNumber.value = e.target.value;
+  setFOV(e.target.value);
+});
+fovNumber.addEventListener('input', e => {
+  fovSlider.value = e.target.value;
+  setFOV(e.target.value);
+});
+
+// Синхронизация near
+function setNear(val) {
+  camera.near = parseFloat(val);
+  camera.updateProjectionMatrix(); // обязательно!
+}
+nearSlider.addEventListener('input', e => {
+  nearNumber.value = e.target.value;
+  setNear(e.target.value);
+});
+nearNumber.addEventListener('input', e => {
+  nearSlider.value = e.target.value;
+  setNear(e.target.value);
+});
+
+
+//Wireframe
+
+// Получаем элементы управления
+const wireColor = document.getElementById('wireColor');
+const wireOpacity = document.getElementById('wireOpacity');
+const wireOpacityNum = document.getElementById('wireOpacityNum');
+const wireSwitch = document.getElementById('wireframeSwitch');
+const onlyWireframeSwitch = document.getElementById('onlyWireframeSwitch');
+
+const wireframeHelpers = new Map();
+
+function setWireframeProps(color, opacity, toggle, onlyWireframe) {
+  models.forEach(model => {
+    model.traverse(obj => {
+      // Пропускаем все wireframe-меши, чтобы не зациклиться!
+      if (obj.isMesh && !obj.isWireframeHelper && obj.material) {
+        // Удаляем старый wireframe helper, если есть
+        if (wireframeHelpers.has(obj)) {
+          const wireMesh = wireframeHelpers.get(obj);
+          if (wireMesh.parent) wireMesh.parent.remove(wireMesh);
+          wireframeHelpers.delete(obj);
+        }
+
+        // Сохраняем оригинальные параметры
+        if (toggle && !obj.material._originalParams) {
+          obj.material._originalParams = {
+            color: obj.material.color.clone(),
+            opacity: obj.material.opacity,
+            transparent: obj.material.transparent,
+            wireframe: obj.material.wireframe,
+            visible: obj.material.visible
+          };
+        }
+
+        if (toggle) {
+          if (onlyWireframe) {
+            // Только сетка, обычный материал скрываем
+            obj.material.wireframe = true;
+            obj.material.color.set(color);
+            obj.material.opacity = opacity;
+            obj.material.transparent = opacity < 1;
+            obj.material.visible = true;
+          } else {
+            // Показываем обычный материал, wireframe отдельно
+            obj.material.wireframe = false;
+            
+            obj.material.color.copy(obj.material._originalParams.color);
+
+            obj.material.opacity = 1;
+            obj.material.transparent = false;
+            obj.material.visible = true;
+
+            // Создаем wireframe-меш только если его нет
+            if (!wireframeHelpers.has(obj)) {
+              const wireMat = obj.material.clone();
+              wireMat.wireframe = true;
+              wireMat.color.set(color);
+              wireMat.opacity = opacity;
+              wireMat.transparent = opacity < 1;
+              wireMat.depthTest = true;
+              wireMat.depthWrite = false;
+              wireMat.polygonOffset = true;
+              wireMat.polygonOffsetFactor = -1;
+              wireMat.polygonOffsetUnits = -1;
+
+              const wireMesh = new THREE.Mesh(obj.geometry, wireMat);
+              wireMesh.renderOrder = 1;
+              wireMesh.isWireframeHelper = true; // ВАЖНО: помечаем как wireframe helper
+
+              obj.add(wireMesh);
+              wireframeHelpers.set(obj, wireMesh);
+            } else {
+              // Обновляем параметры wireframe-меша
+              const wireMesh = wireframeHelpers.get(obj);
+              wireMesh.material.color.set(color);
+              wireMesh.material.opacity = opacity;
+              wireMesh.material.transparent = opacity < 1;
+              wireMesh.material.needsUpdate = true;
+            }
+          }
+        } else if (obj.material._originalParams) {
+          // Восстанавливаем оригинальные параметры
+          obj.material.wireframe = obj.material._originalParams.wireframe;
+          obj.material.color.copy(obj.material._originalParams.color);
+          obj.material.opacity = obj.material._originalParams.opacity;
+          obj.material.transparent = obj.material._originalParams.transparent;
+          obj.material.visible = obj.material._originalParams.visible;
+          obj.material.needsUpdate = true;
+        }
+      }
+    });
+  });
+
+  // После обхода: удаляем wireframe-меши, если они больше не нужны
+  if (!toggle || onlyWireframe) {
+    wireframeHelpers.forEach((wireMesh, obj) => {
+      if (wireMesh.parent) wireMesh.parent.remove(wireMesh);
+    });
+    wireframeHelpers.clear();
+  }
+}
+
+
+
+  wireSwitch.addEventListener('input', (e) =>{
+    setWireframeProps(wireColor.value, wireOpacity.value, wireSwitch.checked, onlyWireframeSwitch.checked);
+});
+
+onlyWireframeSwitch.addEventListener('input', (e) => {
+  setWireframeProps(wireColor.value, wireOpacity.value, wireSwitch.checked, onlyWireframeSwitch.checked)
+});
+// Слушаем изменение цвета
+wireColor.addEventListener('input', (e) => {
+  setWireframeProps(e.target.value, parseFloat(wireOpacity.value),wireSwitch.checked,onlyWireframeSwitch.checked);
+});
+
+// Слушаем изменение opacity (синхронизируем с числовым input)
+syncSliderAndNumber(wireOpacity, wireOpacityNum, (val) => {
+  setWireframeProps(wireColor.value, val, wireSwitch.checked, onlyWireframeSwitch.checked);
+});
+
+// Если нужно, можно сразу применить значения при загрузке модели:
+setWireframeProps(wireColor.value, parseFloat(wireOpacity.value), wireSwitch.checked, onlyWireframeSwitch.checked);

@@ -14,13 +14,18 @@ headers.forEach(header => {
 
 
 /* Блоки настроек */
-document.querySelectorAll('.accordion-header').forEach(header => {
+
+const simpleAccordeons = Array.from(document.querySelectorAll('.accordion-header'))
+  .filter(header => !header.id);
+
+  simpleAccordeons.forEach(header => {
     header.addEventListener('click', function() {
       const content = this.nextElementSibling;
       const isOpen = content.classList.contains('open');
-  
+      
       // Скрываем все
       document.querySelectorAll('.accordion-content').forEach(c => {
+        if(c.id) return;
         c.classList.remove('open');
         c.previousElementSibling.classList.remove('active');
       });
@@ -33,3 +38,21 @@ document.querySelectorAll('.accordion-header').forEach(header => {
     });
   });
   
+
+
+const wireframeSwitch = document.getElementById('wireframeSwitch');
+const wireframeAccordeon = document.getElementById('wireAccordeon');
+const accordionContent = document.getElementById('wireframeContent');
+
+wireframeSwitch.addEventListener('change', () => {
+  if (wireframeSwitch.checked) {
+    wireframeAccordeon.classList.add('active');
+  } else {
+    wireframeAccordeon.classList.remove('active');
+  }
+  accordionContent.classList.toggle('open');
+
+  
+  console.log(wireframeAccordeon.classList);
+  console.log(accordionContent.classList);
+});

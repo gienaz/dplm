@@ -15,7 +15,7 @@
   </div>
 
   <div class="preferences"> <!--Preferences-->
-    <div class="tabs">
+    <div class="tabs"> <!--tabs-->
       <div class="tab-headers">
         <button class="tab-header active" data-tab="tab1">Scene</button>
         <button class="tab-header" data-tab="tab2">Lighting</button>
@@ -25,7 +25,7 @@
         <button class="tab-header" data-tab="tab6">AR/VR</button>
       </div>
       <div class="tab-content active" id="tab1">
-        <div class="preferences-block-simple"> <!--LOC ROT SCALE-->
+        <div class="preferences-block-simple"> <!--BD SYUDA!!!!!!!!!! LOC ROT SCALE-->
               <div class="accordion-header">
                 <div class="inset">Transform</div>
               </div>
@@ -58,11 +58,62 @@
                     <label>Z:</label><input type="range" id="sclZ" min="0.1" max="3" step="0.01" value="1">
                     <input type="number" id="sclZn" min="0.1" max="3" step="0.01" value="1">
                   </div>
+                <br>
+
                 </div>
               </div>
 
         </div>
+        <div class="preferences-block-simple"> <!--BD SYUDA!!!!!!!!!! CAMERA SETTINGS-->
+          <div class="accordion-header">
+            <div class="inset">Camera Settings</div>
+          </div>
+          <div class="accordion-content">
+            <div id="controls"> 
+              <div class="control-group">
+                <br>
+                <label>Field Of View:</label><input type="range" id="fov" min="5" max="100" step="1" value="30">
+                <input type="number" id="fovn" min="5" max="100" step="1" value="30"><br>
+                <label>Near Clipping distance:</label><input type="range" id="ncd" min="0.01" max="5" step="0.01" value="0.05">
+                <input type="number" id="ncdn" min="0.01" max="5" step="0.01" value="0.05"><br>
+            </div>
+          </div>
+
+    </div>
       </div>
+        <div class="preferences-block-switch"> <!--BD SYUDA!!!!!!!!!! WIREFRAME-->
+        <div class="accordion-header" id="wireAccordeon">
+          <div class="inset">Wireframe
+            <div class="switch-container">
+              <label class="switch">
+                <input type="checkbox" id="wireframeSwitch" value="false">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+          
+        </div>
+        <div class="accordion-content" id="wireframeContent">
+          <div id="controls"> 
+            <div class="control-group">
+              <br>
+              <label>
+                <input type="checkbox" id="onlyWireframeSwitch">
+                Only wireframe
+              </label>
+              <br>
+              <label>Wireframe color:</label>
+              <input type="color" id="wireColor" value="#eeeeee">
+              <br>
+              <label>Wireframe opacity:</label>
+              <input type="range" id="wireOpacity" min="0" max="1" step="0.01" value="1">
+              <input type="number" id="wireOpacityNum" min="0" max="1" step="0.01" value="1">
+            
+          </div>
+        </div>
+
+  </div>
+    </div>
       <div class="tab-content" id="tab2">
         <p>Lightning.</p>
         <p>Lightning.</p>
