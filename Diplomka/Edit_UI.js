@@ -53,6 +53,33 @@ wireframeSwitch.addEventListener('change', () => {
   accordionContent.classList.toggle('open');
 
   
-  console.log(wireframeAccordeon.classList);
-  console.log(accordionContent.classList);
+});
+
+
+const bgSwitch = document.getElementById('bgSwitch');
+const bgAccordeon = document.getElementById('bgAccordeon');
+const bgContent = document.getElementById('bgContent');
+
+bgSwitch.addEventListener('change', () => {
+  if (bgSwitch.checked) {
+    bgAccordeon.classList.add('active');
+  } else {
+    bgAccordeon.classList.remove('active');
+  }
+  bgContent.classList.toggle('open');
+
+});
+
+const gridSwitch = document.getElementById('gridSwitch');
+const gridAccordeon = document.getElementById('gridAccordeon');
+const gridContent = document.getElementById('gridContent');
+
+gridSwitch.addEventListener('change', () => {
+  if (gridSwitch.checked) {
+    gridAccordeon.classList.add('active');
+  } else {
+    gridAccordeon.classList.remove('active');
+  }
+  gridContent.classList.toggle('open');
+
 });

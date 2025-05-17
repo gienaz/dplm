@@ -264,3 +264,95 @@ syncSliderAndNumber(wireOpacity, wireOpacityNum, (val) => {
 
 // Если нужно, можно сразу применить значения при загрузке модели:
 setWireframeProps(wireColor.value, parseFloat(wireOpacity.value), wireSwitch.checked, onlyWireframeSwitch.checked);
+
+
+
+//Background
+
+// Найди элементы
+const bgSwitch = document.getElementById('bgSwitch');
+const bgParams = document.getElementById('bgParams');
+const bgTypeRadios = document.getElementsByName('bgType');
+const bgColor = document.getElementById('bgColor');
+const bgGradColor1 = document.getElementById('bgGradColor1');
+const bgGradColor2 = document.getElementById('bgGradColor2');
+const bgGradDirection = document.getElementById('bgGradDirection');
+
+// Функция обновления фона
+function updateBackground() {
+  if (!bgSwitch.checked) {
+    // Прозрачный фон
+    renderer.setClearColor(0x000000, 0);
+    scene.background = null;
+    // Для градиента: убираем фон у body
+    document.body.style.background = 'none';
+    return;
+  }
+
+  // Определяем выбранный тип
+  let bgType = 'color';
+  for (let radio of bgTypeRadios) {
+    if (radio.checked) {
+      bgType = radio.value;
+      break;
+    }
+  }
+
+  if (bgType === 'color') {
+    // Сплошной цвет
+    const color = bgColor.value;
+    renderer.setClearColor(color, 1);
+    scene.background = new THREE.Color(color);
+    document.body.style.background = 'none';
+  } else {
+    // Градиент
+    const color1 = bgGradColor1.value;
+    const color2 = bgGradColor2.value;
+    const direction = bgGradDirection.value;
+    // Убираем фон сцены, делаем прозрачным
+    renderer.setClearColor(0x000000, 0);
+    scene.background = null;
+    // Градиент через CSS body
+    document.body.style.background = `linear-gradient(${direction}, ${color1}, ${color2})`;
+  }
+}
+
+// Слушатели событий
+bgSwitch.addEventListener('change', updateBackground);
+bgColor.addEventListener('input', updateBackground);
+bgGradColor1.addEventListener('input', updateBackground);
+bgGradColor2.addEventListener('input', updateBackground);
+bgGradDirection.addEventListener('change', updateBackground);
+for (let radio of bgTypeRadios) {
+  radio.addEventListener('change', updateBackground);
+}
+
+// Первый запуск
+updateBackground();
+
+
+
+
+
+//Grid
+
+const gridSwitch = document.getElementById('gridSwitch');
+const gridColor = document.getElementById('gridColor');
+
+// Функция обновления сетки
+function updateGrid() {
+  // Вкл/выкл видимость
+  grid.visible = gridSwitch.checked;
+
+  // Изменение цвета
+  const color = new THREE.Color(gridColor.value);
+  grid.material.color.set(color);
+  grid.material.vertexColors = false; // чтобы цвет применился ко всей сетке
+}
+
+// Слушатели
+gridSwitch.addEventListener('change', updateGrid);
+gridColor.addEventListener('input', updateGrid);
+
+// Инициализация
+updateGrid();

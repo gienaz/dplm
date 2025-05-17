@@ -5,6 +5,38 @@ html, body{
    color:whitesmoke;
    font-family: 'Tahoma';
 }
+input[type="color"] {
+  background: none;
+  margin: 0;
+  outline: none;
+  padding: 0;
+  border: 0;
+  width: 40px;
+  height: 40px;
+  }
+}
+input[type="range"]{
+  width: 250px;
+  accent-color: #4e8cff;
+  height: 30px;
+  border-radius: 2px;
+  background: #e0e7ef;
+  outline: none;
+}
+input[type="number"]{
+  width: 40px;
+  position: absolute;
+  right: 0;
+  background-color: #222222;
+  border: 1px solid black;
+  border-radius: 5px;
+  height: 30px;
+  text-align: center;
+  color: whitesmoke;
+  
+}
+
+
   canvas {
     display: block;
     width: 100%;
@@ -125,6 +157,23 @@ html, body{
   
       gap: 10px;
       transition: 0.3s linear;
+
+
+      #controls{
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        gap: 20px;
+        width: 400px;
+      }
+      .control-group
+      {
+        width: 400px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
     }
     
     .accordion-content.open {
@@ -193,3 +242,4 @@ html, body{
     transform: translateX(22px);
   }
   }
+
