@@ -272,13 +272,20 @@ const bgColor = document.getElementById('bgColor');
 const bgGradColor1 = document.getElementById('bgGradColor1');
 const bgGradColor2 = document.getElementById('bgGradColor2');
 const bgGradDirection = document.getElementById('bgGradDirection');
+const bgSwitch = document.getElementById('bgSwitch');
 
-// Этот envMap ты уже используешь для HDRI освещения
-// let envMap = ... (должен быть глобальным!)
+
 
 function updateBackground() {
   // Определяем выбранный тип
-
+  
+  if (!bgSwitch.checked) {
+      // Фон выключен — делаем прозрачным
+      renderer.setClearColor(0x000000, 0); // прозрачный фон рендерера
+      scene.background = null;             // прозрачный фон сцены
+      document.body.style.background = 'none'; // убираем фон у body
+      return;
+    }
   let bgType = 'color';
   for (let radio of bgTypeRadios) {
     if (radio.checked) {
@@ -310,6 +317,7 @@ function updateBackground() {
   }
 }
 
+bgSwitch.addEventListener('input', updateBackground);
 // Слушатели событий
 for (let radio of bgTypeRadios) {
   radio.addEventListener('change', updateBackground);
