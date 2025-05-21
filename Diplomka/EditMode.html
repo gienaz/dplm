@@ -73,15 +73,14 @@
           <div class="accordion-content">
             <div id="controls"> 
                 <div class="control-group">
-                <br>
-                <label>Field Of View:</label><br><input type="range" id="fov" min="5" max="100" step="1" value="30">
-                <input type="number" id="fovn" min="5" max="100" step="1" value="30">
+                
+                <div style="display: flex; gap: 5px; flex-direction: column;"><label>Field Of View:</label><input type="range" id="fov" min="5" max="100" step="1" value="30">
+                <input type="number" id="fovn" min="5" max="100" step="1" value="30"></div>
                 </div>
                 <div class="control-group">
-                <label>Near Clipping distance:</label><input type="range" id="ncd" min="0.01" max="5" step="0.01" value="0.05">
-                <input type="number" id="ncdn" min="0.01" max="5" step="0.01" value="0.05"><br>
+                <div style="display: flex; gap: 5px; flex-direction: column;"><label>Near Clipping distance:</label><input type="range" id="ncd" min="0.01" max="5" step="0.01" value="0.05">
+                <input type="number" id="ncdn" min="0.01" max="5" step="0.01" value="0.05"></div><br>
             </div>
-            <br>
           </div>
 
     </div>
@@ -101,21 +100,21 @@
         <div class="accordion-content" id="wireframeContent">
           <div id="controls" style="gap: 10px;"> 
             <div class="control-group">
-              <br>
+              
+              <div>
               <label>
-                <input type="checkbox" id="onlyWireframeSwitch">
                 Only wireframe
-              </label>
+                <input type="checkbox" id="onlyWireframeSwitch">
+              </label></div>
               </div>
               <div class="control-group" >
-              <label>Wireframe color:</label><br>
-              <input type="color" id="wireColor" value="#eeeeee">
-              <br>
+                <div>
+              <label>Wireframe color:</label>
+              <input type="color" id="wireColor" value="#eeeeee"></div>
+              <div>
               <label>Wireframe opacity:</label>
               <input type="range" id="wireOpacity" min="0" max="1" step="0.01" value="1">
-              <input type="number" id="wireOpacityNum" min="0" max="1" step="0.01" value="1">
-                <br>
-                <br>
+              <input type="number" id="wireOpacityNum" min="0" max="1" step="0.01" value="1" style="display: none;"></div>
                 <br>
           </div>
         </div>
@@ -148,7 +147,7 @@
                 <br>
 
                 <label>
-                  <input type="radio" name="bgType" value="gradient" checked>
+                  <input type="radio" name="bgType" value="gradient">
                   Gradient
                 </label>
                 <input type="color" id="bgGradColor1" value="#111111"  class="colorPicker">
@@ -160,6 +159,9 @@
                 </select>
                 
               </div>
+              <label id="hdribackgroundCheck">
+                <input type="radio" name="bgType" value="hdri" checked>HDRI background
+              </label>
               <br>
           </div>
         </div>
@@ -180,7 +182,6 @@
         <div class="accordion-content open" id="gridContent">
           <div id="controls"> 
             <div class="control-group">
-              <br>
                 <label>
                   Grid Color:
                   <input type="color" id="gridColor" value="#111111">
@@ -192,13 +193,90 @@
   </div>
     </div>
       <div class="tab-content" id="tab2"> <!--Lighting Settings-->
-        <p>Lightning.</p>
-        <p>Lightning.</p>
-        <p>Lightning.</p>
-      </div>
+        <div class="preferences-block-switch"> <!--BD SYUDA!!!!!!!!!! HDRI-->
+        <div class="accordion-header active" id="hdriAccordeon">
+          <div class="inset">HDRI
+            <div class="switch-container">
+              <label class="switch">
+                <input type="checkbox" id="hdriSwitch" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+          
+        </div>
+        <div class="accordion-content open" id="hdriContent">
+          <div id="controls"> 
+            <div id="hdri-selector" class="hdri-selector">
+              <div id="hdri-current" class="hdri-current">
+                <img id="hdri-preview" src="/hdri/0/preview.jpeg" alt="HDRI Preview">
+              </div>
+              <div id="hdri-list" class="hdri-list"></div>
+            </div>
+              <div style="position: relative; display: flex; gap: 5px; flex-direction: column;"><label>
+                Brightness:
+                <input type="range" id="hdriBrightness" min="0.1" max="3" step="0.01" value="1.1">
+                <input type="number" id="hdriBrightnessNum" min="0.1" max="3" step="0.01" value="1.1" style="width:50px;">
+              </label></div>
+              <div style="position: relative; display: flex; gap: 5px; flex-direction: column;"><label>
+                Background rotation:
+                <input type="range" id="hdriRotation" min="0" max="6.283" step="0.01" value="0">
+                <input type="number" id="hdriRotationNum" min="0" max="6.283" step="0.01" value="0" style="width:50px;">
+              </label></div>
+          </div>
+              <br>
+
+        </div>
+
+  </div>
+    </div>
       <div class="tab-content" id="tab3"> <!--Materials Settings-->
-        <p>Materials.</p>
+        <div class="preferences-block-simple"> <!--BD SYUDA!!!!!!!!!! MATERIAL-TYPE-->
+          <div class="accordion-header">
+            <div class="inset">Material Type</div>
+          </div>
+          <div class="accordion-content">
+            <div id="controls"> 
+              <div class="material-pipeline-group">
+                <span class="material-pipeline-radio">
+                  <input type="radio" id="matPBR" name="matPipeline" value="pbr" style="border-radius: 5px 5px 0 px 0px;" checked>
+                  <label for="matPBR">PBR</label>
+                </span>
+                <span class="material-pipeline-radio">
+                  <input type="radio" id="matNonPBR" name="matPipeline" value="nonpbr">
+                  <label for="matNonPBR">Non-PBR</label>
+                </span>
+                <span class="material-pipeline-radio">
+                  <input type="radio" id="matFlat" name="matPipeline" value="flat">
+                  <label for="matFlat">Flat color</label>
+                </span>
+              </div>
+            </div>
+            
+          </div>
+      <div class="tab-content" id="tab4"> <!--Post Processing Settings-->
+        <p>PostProcessing.</p>
       </div>
+      <div class="tab-content" id="tab5"> <!--Animations Settings-->
+        <p>Animations WIP.</p>
+      </div>
+      <div class="tab-content" id="tab6"> <!--ARVR Settings-->
+        <p>Ar/Vr WIP.</p>
+      </div>
+    </div>
+    <div class="preferences-block-simple"> <!--BD SYUDA!!!!!!!!!! TEXTURES-->
+          <div class="accordion-header">
+            <div class="inset">Parameters</div>
+          </div>
+          <div class="accordion-content">
+            <div id="controls"> 
+              <div>
+                <label for="materialSlot">Material slot:</label>
+                <select id="materialSlot"></select>
+              </div>
+            </div>
+            
+          </div>
       <div class="tab-content" id="tab4"> <!--Post Processing Settings-->
         <p>PostProcessing.</p>
       </div>

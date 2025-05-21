@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { PMREMGenerator } from 'three';
 
 // Рендерер
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -26,12 +28,6 @@ const controls = new OrbitControls(camera, renderer.domElement);
 // Сетка на полу (GridHelper)
 const grid = new THREE.GridHelper(20, 20, 0x111111, 0x111111);
 scene.add(grid);
-
-// Свет
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(10, 10, 10);
-scene.add(light);
-scene.add(new THREE.AmbientLight(0x888888));
 
 // GLTFLoader для загрузки GLB-модели
 const loader = new GLTFLoader();
@@ -62,7 +58,8 @@ loader.load(
       return;
     };
   });
-
+  
+  renderer.shadowMap.enabled = true;
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
   window.addEventListener('resize', () => {
@@ -270,26 +267,18 @@ setWireframeProps(wireColor.value, parseFloat(wireOpacity.value), wireSwitch.che
 //Background
 
 // Найди элементы
-const bgSwitch = document.getElementById('bgSwitch');
-const bgParams = document.getElementById('bgParams');
 const bgTypeRadios = document.getElementsByName('bgType');
 const bgColor = document.getElementById('bgColor');
 const bgGradColor1 = document.getElementById('bgGradColor1');
 const bgGradColor2 = document.getElementById('bgGradColor2');
 const bgGradDirection = document.getElementById('bgGradDirection');
 
-// Функция обновления фона
-function updateBackground() {
-  if (!bgSwitch.checked) {
-    // Прозрачный фон
-    renderer.setClearColor(0x000000, 0);
-    scene.background = null;
-    // Для градиента: убираем фон у body
-    document.body.style.background = 'none';
-    return;
-  }
+// Этот envMap ты уже используешь для HDRI освещения
+// let envMap = ... (должен быть глобальным!)
 
+function updateBackground() {
   // Определяем выбранный тип
+
   let bgType = 'color';
   for (let radio of bgTypeRadios) {
     if (radio.checked) {
@@ -304,31 +293,31 @@ function updateBackground() {
     renderer.setClearColor(color, 1);
     scene.background = new THREE.Color(color);
     document.body.style.background = 'none';
-  } else {
+  } else if (bgType === 'gradient') {
     // Градиент
     const color1 = bgGradColor1.value;
     const color2 = bgGradColor2.value;
     const direction = bgGradDirection.value;
-    // Убираем фон сцены, делаем прозрачным
     renderer.setClearColor(0x000000, 0);
     scene.background = null;
-    // Градиент через CSS body
     document.body.style.background = `linear-gradient(${direction}, ${color1}, ${color2})`;
+  } else if (bgType === 'hdri') {
+    // Фон — HDRI
+    document.body.style.background = 'none';
+    if (envMap) {
+      scene.background = envMap;
+    }
   }
 }
 
 // Слушатели событий
-bgSwitch.addEventListener('change', updateBackground);
+for (let radio of bgTypeRadios) {
+  radio.addEventListener('change', updateBackground);
+}
 bgColor.addEventListener('input', updateBackground);
 bgGradColor1.addEventListener('input', updateBackground);
 bgGradColor2.addEventListener('input', updateBackground);
 bgGradDirection.addEventListener('change', updateBackground);
-for (let radio of bgTypeRadios) {
-  radio.addEventListener('change', updateBackground);
-}
-
-// Первый запуск
-updateBackground();
 
 
 
@@ -356,3 +345,202 @@ gridColor.addEventListener('input', updateGrid);
 
 // Инициализация
 updateGrid();
+
+
+
+
+//HDRI
+
+// === DOM Elements ===
+const hdriSwitch = document.getElementById('hdriSwitch');
+const hdriSelector = document.getElementById('hdri-selector');
+const hdriCurrent = document.getElementById('hdri-current');
+const hdriPreview = document.getElementById('hdri-preview');
+const hdriList = document.getElementById('hdri-list');
+
+
+const hdriBrightness = document.getElementById('hdriBrightness');
+const hdriBrightnessNum = document.getElementById('hdriBrightnessNum');
+const hdriRotation = document.getElementById('hdriRotation');
+const hdriRotationNum = document.getElementById('hdriRotationNum');
+
+// === Конфиг ===
+const HDRI_MAX_COUNT = 11;
+const HDRI_PATH = 'hdri/';
+
+// === State ===
+let hdriOptions = [];
+let currentHdri = null;
+let envMap = null;
+let pmremGenerator = new PMREMGenerator(renderer);
+let lastEquirectTexture = null; 
+
+// === Поиск HDRI ===
+async function findHdriOptions() {
+  const options = [];
+  for (let i = 0; i < HDRI_MAX_COUNT; i++) {
+    const previewUrl = `${HDRI_PATH}${i}/preview.jpeg`;
+    try {
+      const resp = await fetch(previewUrl, { method: 'HEAD' });
+      if (resp.ok) {
+        options.push({
+          index: i,
+          preview: previewUrl,
+          env: `${HDRI_PATH}${i}/enviroment.hdr`
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+  return options;
+}
+
+// === Рендер выпадающего списка ===
+function renderHdriList() {
+  hdriList.innerHTML = '';
+  hdriOptions.forEach(opt => {
+    const div = document.createElement('div');
+    div.className = 'hdri-option';
+    div.innerHTML = `
+      <img src="${opt.preview}" alt="HDRI preview">
+      <span>HDRI #${opt.index}</span>
+    `;
+    div.addEventListener('click', () => selectHdri(opt));
+    hdriList.appendChild(div);
+  });
+}
+
+// === Выбор HDRI ===
+function selectHdri(opt) {
+  hdriPreview.src = opt.preview;
+  hdriList.classList.remove('open');
+  currentHdri = opt;
+  if (hdriSwitch.checked) {
+    loadHdriEnvironment(opt.env);
+  }
+}
+
+
+// === Открытие/закрытие списка ===
+hdriCurrent.addEventListener('click', () => {
+  hdriList.classList.toggle('open');
+});
+document.addEventListener('click', (e) => {
+  if (!hdriSelector.contains(e.target)) {
+    hdriList.classList.remove('open');
+  }
+});
+
+// === Переключатель HDRI ===
+hdriSwitch.addEventListener('change', () => {
+  if (hdriSwitch.checked && currentHdri) {
+    loadHdriEnvironment(currentHdri.env);
+  } else {
+    loadHdriEnvironment(null);
+  }
+});
+
+// === Инициализация ===
+(async function() {
+  hdriOptions = await findHdriOptions();
+  renderHdriList();
+  if (hdriOptions.length > 0) {
+    selectHdri(hdriOptions[0]);
+  }
+})();
+
+function loadHdriEnvironment(hdriPath) {
+  if (!hdriSwitch.checked || !hdriPath) {
+    scene.environment = null;
+    scene.background = null;
+    if (envMap) {
+      envMap.dispose();
+      envMap = null;
+    }
+    if (lastEquirectTexture) {
+      lastEquirectTexture.dispose();
+      lastEquirectTexture = null;
+    }
+    renderer.toneMappingExposure = parseFloat(hdriBrightness.value);
+    return;
+  }
+
+  new RGBELoader()
+    .load(
+      hdriPath,
+      function(texture) {
+        // Удаляем старые карты
+        if (envMap) { envMap.dispose(); envMap = null; }
+        if (lastEquirectTexture) { lastEquirectTexture.dispose(); lastEquirectTexture = null; }
+
+        // Для освещения — PMREM
+        envMap = pmremGenerator.fromEquirectangular(texture).texture;
+        scene.environment = envMap;
+
+        // Для фона — оригинальная equirectangular текстура
+        lastEquirectTexture = texture;
+        lastEquirectTexture.mapping = THREE.EquirectangularReflectionMapping;
+        lastEquirectTexture.rotation = parseFloat(hdriRotation.value);
+
+        // Если выбран режим HDRI background — показываем фон
+        let bgType = 'color';
+        for (let radio of bgTypeRadios) {
+          if (radio.checked) {
+            bgType = radio.value;
+            break;
+          }
+        }
+        if (bgType === 'hdri') {
+          scene.background = lastEquirectTexture;
+        } else {
+          scene.background = null; // Или что-то другое по твоей логике
+        }
+
+        renderer.toneMappingExposure = parseFloat(hdriBrightness.value);
+      },
+      undefined,
+      function(error) {
+        console.error('Ошибка загрузки HDRI:', error);
+      }
+    );
+}
+
+// --- Вращение только для фона ---
+function updateHdriRotation() {
+  const angle = parseFloat(hdriRotation.value);
+  hdriRotationNum.value = angle;
+  if (scene.environment) {
+    scene.environmentRotation = new THREE.Euler(0, angle, 0);
+  }
+  if (scene.background) {
+    scene.backgroundRotation = new THREE.Euler(0, angle, 0);
+  }
+}
+hdriRotation.addEventListener('input', updateHdriRotation);
+hdriRotationNum.addEventListener('input', function() {
+  hdriRotation.value = hdriRotationNum.value;
+  updateHdriRotation();
+});
+
+// --- Яркость ---
+
+
+function updateHdriBrightness() {
+  const value = parseFloat(hdriBrightness.value);
+  renderer.toneMappingExposure = value;
+  hdriBrightnessNum.value = value;
+}
+hdriBrightness.addEventListener('input', updateHdriBrightness);
+hdriBrightnessNum.addEventListener('input', function() {
+  hdriBrightness.value = hdriBrightnessNum.value;
+  updateHdriBrightness();
+});
+
+// --- При смене типа фона ---
+
+for (let radio of bgTypeRadios) {
+  radio.addEventListener('change', updateBackground);
+}
+
+

@@ -59,6 +59,7 @@ wireframeSwitch.addEventListener('change', () => {
 const bgSwitch = document.getElementById('bgSwitch');
 const bgAccordeon = document.getElementById('bgAccordeon');
 const bgContent = document.getElementById('bgContent');
+const hdribackgroundSwitch = document.getElementById('hdribackgroundCheck');
 
 bgSwitch.addEventListener('change', () => {
   if (bgSwitch.checked) {
@@ -68,6 +69,14 @@ bgSwitch.addEventListener('change', () => {
   }
   bgContent.classList.toggle('open');
 
+
+  if(hdriSwitch.checked)
+  {
+    hdribackgroundSwitch.style.display='block';
+  }
+  else{
+    hdribackgroundSwitch.style.display='none';
+  }
 });
 
 const gridSwitch = document.getElementById('gridSwitch');
@@ -83,3 +92,26 @@ gridSwitch.addEventListener('change', () => {
   gridContent.classList.toggle('open');
 
 });
+
+const hdriSwitch = document.getElementById('hdriSwitch');
+const hdriAccordeon = document.getElementById('hdriAccordeon');
+const hdriContent = document.getElementById('hdriContent');
+
+hdriSwitch.addEventListener('change', () => {
+  if (hdriSwitch.checked) {
+    hdriAccordeon.classList.add('active');
+  } else {
+    hdriAccordeon.classList.remove('active');
+  }
+  hdriContent.classList.toggle('open');
+
+});
+
+
+if(hdriSwitch.checked)
+{
+  hdribackgroundSwitch.style.display='block';
+}
+else{
+  hdribackgroundSwitch.style.display='none';
+}
