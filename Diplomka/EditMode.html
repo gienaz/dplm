@@ -239,53 +239,86 @@
             <div id="controls"> 
               <div class="material-pipeline-group">
                 <span class="material-pipeline-radio">
-                  <input type="radio" id="matPBR" name="matPipeline" value="pbr" style="border-radius: 5px 5px 0 px 0px;" checked>
+                  <input type="radio" id="matPBR" name="matPipeline" value="pbr">
                   <label for="matPBR">PBR</label>
                 </span>
                 <span class="material-pipeline-radio">
-                  <input type="radio" id="matNonPBR" name="matPipeline" value="nonpbr">
-                  <label for="matNonPBR">Non-PBR</label>
+                  <input type="radio" id="matMatcap" name="matPipeline" value="matcap">
+                  <label for="matMatcap">Matcap</label>
                 </span>
                 <span class="material-pipeline-radio">
-                  <input type="radio" id="matFlat" name="matPipeline" value="flat">
-                  <label for="matFlat">Flat color</label>
+                  <input type="radio" id="matPrimal" name="matPipeline" value="primal" checked>
+                  <label for="matPrimal">Primal</label>
                 </span>
               </div>
             </div>
-            
           </div>
-      <div class="tab-content" id="tab4"> <!--Post Processing Settings-->
-        <p>PostProcessing.</p>
-      </div>
-      <div class="tab-content" id="tab5"> <!--Animations Settings-->
-        <p>Animations WIP.</p>
-      </div>
-      <div class="tab-content" id="tab6"> <!--ARVR Settings-->
-        <p>Ar/Vr WIP.</p>
-      </div>
-    </div>
-    <div class="preferences-block-simple"> <!--BD SYUDA!!!!!!!!!! PARAMETERS-->
-          <div class="accordion-header">
-            <div class="inset">Parameters</div>
-          </div>
-          <div class="accordion-content">
-            <div id="controls"> 
-              <div>
-                <label for="materialSlot">Material slot:</label>
-                <select id="materialSlot"></select>
+    </div>  
+        <div class="preferences-block-simple"> <!--BD SYUDA!!!!!!!!!! MATERIAL-PARAMETERS-->
+                  <div class="accordion-header">
+                    <div class="inset">Parameters</div>
+                  </div>
+                  <div class="accordion-content">
+                    <div id="controls" class="materialSettingsPBR" style="display: none;"> <!--PBR-->
+                      <div>
+                        <label for="materialSlot">Material slot:</label>
+                        <select id="materialSlot"></select>
+                      </div>
+                      <div id="textureHolder">
+                        <div class="texture-upload">
+                          <label for="baseColorUpload">BaseColor:</label>
+                          <input type="file" id="baseColorUpload" accept="image/*">
+                          <div id="baseColorPreview" class="texture-preview"></div>
+                        </div>
+                        <div class="texture-upload">
+                          <label for="roughnessUpload">Roughness:</label>
+                          <input type="file" id="roughnessUpload" accept="image/*">
+                          <div id="roughnessPreview" class="texture-preview"></div>
+                        </div>
+                        <div class="texture-upload">
+                          <label for="metallicUpload">Metallic:</label>
+                          <input type="file" id="metallicUpload" accept="image/*">
+                          <div id="metallicPreview" class="texture-preview"></div>
+                        </div>
+                        <div class="texture-upload">
+                          <label for="normalUpload">Normal Map:</label>
+                          <input type="file" id="normalUpload" accept="image/*">
+                          <div id="normalPreview" class="texture-preview"></div>
+                        </div>
+                        <br>
+                      </div>
+                    </div>
+                    <div id="controls" class="materialSettingsMatcap" style="display: none;"> <!--Matcap-->
+                        <div>Matcap Settings</div>
+                        <br>
+                      </div>
+                    <div id="controls" class="materialSettingsPrimal"> <!--Primal-->
+                        <div>No settings tho</div>
+                        <br>
+                      </div>
+                    </div>
+                    
+                  </div>
+              <div class="tab-content" id="tab4"> <!--Post Processing Settings-->
+                <p>PostProcessing.</p>
               </div>
-            </div>
-            
-          </div>
-      <div class="tab-content" id="tab4"> <!--Post Processing Settings-->
-        <p>PostProcessing.</p>
-      </div>
-      <div class="tab-content" id="tab5"> <!--Animations Settings-->
-        <p>Animations WIP.</p>
-      </div>
-      <div class="tab-content" id="tab6"> <!--ARVR Settings-->
-        <p>Ar/Vr WIP.</p>
-      </div>
+              <div class="tab-content" id="tab5"> <!--Animations Settings-->
+                <p>Animations WIP.</p>
+              </div>
+              <div class="tab-content" id="tab6"> <!--ARVR Settings-->
+                <p>Ar/Vr WIP.</p>
+              </div>
+    </div>
+
+    </div>
+    <div class="tab-content" id="tab4"> <!--Post Processing Settings-->
+      <p>PostProcessing.</p>
+    </div>
+    <div class="tab-content" id="tab5"> <!--Animations Settings-->
+      <p>Animations WIP.</p>
+    </div>
+    <div class="tab-content" id="tab6"> <!--ARVR Settings-->
+      <p>Ar/Vr WIP.</p>
     </div>
   </div>
   

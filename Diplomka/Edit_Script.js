@@ -11,6 +11,7 @@ document.body.appendChild(renderer.domElement);
 
 // Сцена и камера
 const models = [];
+let originalMaterials = [];
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x010101);
 
@@ -32,32 +33,36 @@ scene.add(grid);
 // GLTFLoader для загрузки GLB-модели
 const loader = new GLTFLoader();
 
-// Замените путь на свой GLB-файл
+let mixer = null;
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (mixer) mixer.update(0.008); // обновляем анимацию, если она есть
+  if (controls) controls.update();
+  renderer.render(scene, camera);
+}
+
+animate();
+
 loader.load(
-  'model.glb', // путь к вашей модели
+  'model.glb',
   (gltf) => {
     const model = gltf.scene;
     scene.add(model);
     models.push(model);
+    fillMaterialSlotSelector(models); 
+    saveOriginalMaterials(models);
+    frameModel(model, camera, controls);
 
-    // Если есть анимации, запускаем первую
+    // Если есть анимации, создаём mixer
     if (gltf.animations && gltf.animations.length) {
-      const mixer = new THREE.AnimationMixer(model);
-     /* mixer.clipAction(gltf.animations[0]).play();
-      mixer.clipAction(gltf.animations[1]).play();
-      mixer.clipAction(gltf.animations[2]).play();*/
+      mixer = new THREE.AnimationMixer(model);
+      // mixer.clipAction(gltf.animations[0]).play(); // и т.д.
+    }
+  }
+);
 
-      // Обновление анимации в рендер-цикле
-      function animate() {
-        requestAnimationFrame(animate);
-        mixer.update(0.008); // примерно 60 FPS
-        controls.update();
-        renderer.render(scene, camera);
-      }
-      animate();
-      return;
-    };
-  });
+
   
   renderer.shadowMap.enabled = true;
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -70,6 +75,26 @@ loader.load(
     camera.updateProjectionMatrix();
   });
 
+    function frameModel(model, camera, controls) {
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3()).length();
+    const center = box.getCenter(new THREE.Vector3());
+
+    camera.near = size / 100;
+    camera.far = size * 100;
+    camera.updateProjectionMatrix();
+
+    camera.position.copy(center);
+    camera.position.x += size / 2;
+    camera.position.y += size / 5;
+    camera.position.z += size / 2;
+    camera.lookAt(center);
+
+    if (controls) {
+      controls.target.copy(center);
+      controls.update();
+    }
+  }
   
   function syncSliderAndNumber(slider, number, callback) {
     slider.addEventListener('input', () => {
@@ -552,3 +577,285 @@ for (let radio of bgTypeRadios) {
 }
 
 
+
+//Materials
+
+let currentMaterialType = 'primal'; // по умолчанию
+const matcapTexture = new THREE.TextureLoader().load('textures/matcap.png');
+
+function saveOriginalMaterials(models) {
+  originalMaterials = [];
+  models.forEach((model, meshIndex) => {
+    model.traverse(obj => {
+      if (obj.isMesh && obj.material) {
+        if (Array.isArray(obj.material)) {
+          obj.material.forEach((mat, matIndex) => {
+            originalMaterials.push({
+              mesh: obj,
+              meshIndex,
+              matIndex,
+              material: mat.clone()
+            });
+          });
+        } else {
+          originalMaterials.push({
+            mesh: obj,
+            meshIndex,
+            matIndex: 0,
+            material: obj.material.clone()
+          });
+        }
+      }
+    });
+  });
+}
+
+// Смена материала на выбранный тип для одного слота
+function changeMaterialType(type, meshIndex, matIndex) {
+  // Найти нужный Mesh
+  const mesh = originalMaterials.find(
+    m => m.meshIndex === meshIndex && m.matIndex === matIndex
+  )?.mesh;
+  if (!mesh) return;
+
+  let newMaterial;
+  if (type === 'pbr') {
+    newMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      metalness: 0.5,
+      roughness: 0.5
+    });
+  } else if (type === 'matcap') {
+    newMaterial = new THREE.MeshMatcapMaterial({
+      color: 0xffffff,
+      matcap: matcapTexture
+    });
+  } else if (type === 'primal') {
+    const orig = originalMaterials.find(
+      m => m.meshIndex === meshIndex && m.matIndex === matIndex
+    );
+    if (orig && orig.material) {
+      newMaterial = orig.material.clone();
+    } else {
+      newMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+    }
+  }
+
+  if (Array.isArray(mesh.material) && mesh.material[matIndex]) {
+    mesh.material[matIndex] = newMaterial;
+  } else if (matIndex === 0) {
+    mesh.material = newMaterial;
+  }
+  if (mesh.material) mesh.material.needsUpdate = true;
+}
+
+// Применить материал всем слотам всех моделей
+function applyMaterialTypeToAll(type) {
+  models.forEach((model, meshIndex) => {
+    model.traverse(obj => {
+      if (obj.isMesh && obj.material) {
+        if (Array.isArray(obj.material)) {
+          obj.material.forEach((mat, matIndex) => {
+            let newMaterial = null;
+            if (type === 'pbr') {
+              newMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.5,
+                roughness: 0.5
+              });
+            } else if (type === 'matcap') {
+              newMaterial = new THREE.MeshMatcapMaterial({
+                color: 0xffffff,
+                matcap: matcapTexture
+              });
+            } else if (type === 'primal') {
+              // Найди оригинальный материал для этого конкретного Mesh и matIndex
+              const orig = originalMaterials.find(
+                m => m.mesh === obj && m.matIndex === matIndex
+              );
+              if (orig && orig.material) {
+                newMaterial = orig.material.clone();
+              } else {
+                newMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+              }
+            }
+            obj.material[matIndex] = newMaterial;
+            obj.material[matIndex].needsUpdate = true;
+          });
+        } else {
+          let newMaterial = null;
+          if (type === 'pbr') {
+            newMaterial = new THREE.MeshStandardMaterial({
+              color: 0xffffff,
+              metalness: 0.5,
+              roughness: 0.5
+            });
+          } else if (type === 'matcap') {
+            newMaterial = new THREE.MeshMatcapMaterial({
+              color: 0xffffff,
+              matcap: matcapTexture
+            });
+          } else if (type === 'primal') {
+            const orig = originalMaterials.find(
+              m => m.mesh === obj && m.matIndex === 0
+            );
+            if (orig && orig.material) {
+              newMaterial = orig.material.clone();
+            } else {
+              newMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+            }
+          }
+          obj.material = newMaterial;
+          obj.material.needsUpdate = true;
+        }
+      }
+    });
+  });
+}
+
+let pipelineRadios = document.getElementsByName("matPipeline"); 
+let PBRsettingsDisplay = document.getElementsByClassName("materialSettingsPBR");
+let MatcapsettingsDisplay = document.getElementsByClassName("materialSettingsMatcap");
+let PrimalsettingsDisplay = document.getElementsByClassName("materialSettingsPrimal");
+// Слушатели на radio-кнопки
+pipelineRadios.forEach(radio => {
+  radio.addEventListener('change', function() {
+
+    if (this.checked) {
+      currentMaterialType = this.value;
+      applyMaterialTypeToAll(currentMaterialType);
+      if(this.value === "pbr"){
+          for (let el of PBRsettingsDisplay) el.style.display = "flex";
+          for (let el of MatcapsettingsDisplay) el.style.display = "none";
+          for (let el of PrimalsettingsDisplay) el.style.display = "none";}
+      else if(this.value === "matcap"){
+          for (let el of PBRsettingsDisplay) el.style.display = "none";
+          for (let el of MatcapsettingsDisplay) el.style.display = "flex";
+          for (let el of PrimalsettingsDisplay) el.style.display = "none";
+        }
+      else if(this.value === "primal"){
+          for (let el of PBRsettingsDisplay) el.style.display = "none";
+          for (let el of MatcapsettingsDisplay) el.style.display = "none";
+          for (let el of PrimalsettingsDisplay) el.style.display = "flex";
+        }
+    }
+  })
+  });
+
+
+// Material slots
+let materialSlots = []; // глобально
+
+function getAllMaterialSlots(models) {
+  materialSlots = []; // очищаем перед заполнением!
+  models.forEach((model, meshIndex) => {
+    model.traverse(obj => {
+      if (obj.isMesh && obj.material) {
+        if (Array.isArray(obj.material)) {
+          obj.material.forEach((mat, matIndex) => {
+            materialSlots.push({
+              key: `${obj.uuid}:${matIndex}`,
+              mesh: obj,
+              matIndex,
+              name: mat.name || `Mesh ${obj.name} - Material ${matIndex}`,
+              type: mat.type
+            });
+          });
+        } else {
+          materialSlots.push({
+            key: `${obj.uuid}:0`,
+            mesh: obj,
+            matIndex: 0,
+            name: obj.material.name || `Mesh ${obj.name} - Material`,
+            type: obj.material.type
+          });
+        }
+      }
+    });
+  });
+  return materialSlots;
+}
+
+function fillMaterialSlotSelector(models) {
+  const slots = getAllMaterialSlots(models); // теперь и materialSlots обновится!
+  const select = document.getElementById('materialSlot');
+  select.innerHTML = '';
+  slots.forEach(slot => {
+    const option = document.createElement('option');
+    option.value = `${slot.key}`;
+    option.textContent = `${slot.name} (${slot.type})`;
+    select.appendChild(option);
+  });
+}
+
+
+// texturesMemory: { [slotKey: string]: { [textureType: string]: dataURL } }
+const texturesMemory = {};
+
+// Загрузка текстуры и сохранение в памяти
+function handleTextureUpload(slotKey, textureType, fileInput, previewDiv) {
+  const file = fileInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    if (!texturesMemory[slotKey]) texturesMemory[slotKey] = {};
+    texturesMemory[slotKey][textureType] = e.target.result;
+    previewDiv.style.backgroundImage = `url(${e.target.result})`;
+    // ВАЖНО: вызываем применение текстуры!
+    applyTextureToMaterial(slotKey, textureType);
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyTextureToMaterial(slotKey, textureType) {
+  console.log('applyTextureToMaterial', slotKey, textureType);
+  const slot = materialSlots.find(s => s.key === slotKey);
+  if (!slot) return;
+  const material = Array.isArray(slot.mesh.material)
+    ? slot.mesh.material[slot.matIndex]
+    : slot.mesh.material;
+
+  const dataURL = texturesMemory[slotKey]?.[textureType];
+  if (dataURL) {
+    const tex = new THREE.TextureLoader().load(dataURL, () => {
+      material.needsUpdate = true;
+    });
+    if (textureType === 'baseColor') material.map = tex;
+    if (textureType === 'roughness') material.roughnessMap = tex;
+    if (textureType === 'metallic') material.metalnessMap = tex;
+    if (textureType === 'normal') material.normalMap = tex;
+    material.needsUpdate = true;
+  }
+}
+
+// При смене слота отображаем загруженные текстуры
+function updateTexturePreviews(slotKey) {
+  ['baseColor', 'roughness', 'metallic', 'normal'].forEach(type => {
+    const previewDiv = document.getElementById(type + 'Preview');
+    const dataURL = texturesMemory[slotKey]?.[type];
+    previewDiv.style.backgroundImage = dataURL ? `url(${dataURL})` : '';
+    // ВАЖНО: вызываем применение текстуры!
+    applyTextureToMaterial(slotKey, type);
+    // Сброс input'а файла
+    const input = document.getElementById(type + 'Upload');
+    if (input) input.value = '';
+  });
+}
+
+// Привязка событий
+['baseColor', 'roughness', 'metallic', 'normal'].forEach(type => {
+  const input = document.getElementById(type + 'Upload');
+  const previewDiv = document.getElementById(type + 'Preview');
+  input.addEventListener('change', function() {
+    // slotKey — это значение выбранного option в select'е слотов
+    const slotKey = document.getElementById('materialSlot').value;
+    handleTextureUpload(slotKey, type, input, previewDiv);
+  });
+});
+
+// При смене слота — обновить превью и материал
+document.getElementById('materialSlot').addEventListener('change', function() {
+  updateTexturePreviews(this.value);
+});
+
+// В будущем texturesMemory можно заменить на IndexedDB или серверное хранилище для постоянного сохранения текстур и их привязки к слотам.
