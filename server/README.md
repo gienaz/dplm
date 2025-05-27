@@ -1,88 +1,163 @@
-# Express.js TypeScript API
+# API 3D Моделей
 
-A simple RESTful API built with Express.js and TypeScript that provides basic CRUD operations for users and posts.
+REST API для платформы обмена 3D моделями, построенное на Express.js и TypeScript.
 
-## Setup
+## Технологии
 
-1. Install dependencies:
+- Node.js
+- Express.js
+- TypeScript
+- Multer (для загрузки файлов)
+- CORS
+
+## Установка
+
+1. Клонируйте репозиторий
+```bash
+git clone <your-repo-url>
+cd server
+```
+
+2. Установите зависимости
 ```bash
 npm install
 ```
 
-2. Start the server:
+3. Запустите сервер
 ```bash
-# Development mode with auto-reload
+# Режим разработки с автоперезагрузкой
 npm run dev
 
-# Build the TypeScript code
+# Сборка TypeScript
 npm run build
 
-# Production mode (requires build first)
+# Запуск production версии
 npm start
 ```
 
-The server will start on port 3000 by default.
+По умолчанию сервер запускается на порту 3000.
 
-## Project Structure
+## Структура проекта
 
 ```
-src/
-  └── server/
-      ├── types/      # TypeScript interfaces
-      ├── routes/     # Route handlers
-      ├── app.ts      # Express app configuration
-      └── index.ts    # Server entry point
+server/
+  ├── src/
+  │   ├── config/     # Конфигурация (загрузка файлов)
+  │   ├── routes/     # Маршруты API
+  │   ├── types/      # TypeScript интерфейсы
+  │   ├── app.ts      # Конфигурация Express
+  │   └── index.ts    # Точка входа
+  ├── uploads/        # Директория для загруженных файлов
+  ├── package.json
+  └── tsconfig.json
 ```
 
 ## API Endpoints
 
-### Users
+### Основные endpoints
 
-- `GET /api/users` - Get all users
-- `GET /api/users/:id` - Get user by ID
-- `POST /api/users` - Create a new user
-- `PUT /api/users/:id` - Update a user
-- `DELETE /api/users/:id` - Delete a user
+- `GET /` - Приветственное сообщение
+- `GET /api/models` - Получить все модели
+- `GET /api/models/:id` - Получить модель по ID
+- `POST /api/models` - Загрузить новую модель
+- `POST /api/models/:id/like` - Поставить лайк модели
+- `GET /api/models/:id/download` - Скачать модель
 
-### Posts
+### Параметры запросов
 
-- `GET /api/posts` - Get all posts
-- `GET /api/posts/:id` - Get post by ID
-- `POST /api/posts` - Create a new post
-- `PUT /api/posts/:id` - Update a post
-- `DELETE /api/posts/:id` - Delete a post
+#### GET /api/models
+Поддерживает следующие query-параметры:
+- `page` (число): Номер страницы (по умолчанию: 1)
+- `limit` (число): Количество моделей на странице (по умолчанию: 20)
+- `tag` (строка): Фильтрация по тегу
+- `sort` (строка): Сортировка ('likes', 'downloads', 'recent')
 
-## Example Requests
+#### POST /api/models
+Multipart form-data с полями:
+- `title` (строка): Название модели
+- `description` (строка): Описание модели
+- `tags` (JSON строка): Массив тегов
+- `model` (файл): STL, OBJ или glTF файл
 
-### Create a new user
+## Поддерживаемые форматы файлов
+
+- STL (.stl)
+- OBJ (.obj)
+- glTF (.gltf)
+
+Максимальный размер файла: 100MB
+
+## Тестирование API
+
+В проекте есть скрипт для тестирования всех endpoints:
+
 ```bash
-curl -X POST http://localhost:3000/api/users \
-  -H "Content-Type: application/json" \
-  -d '{"name": "John Doe", "email": "john@example.com"}'
+# Для Windows PowerShell
+.\test-api.ps1
+
+# Для Unix-подобных систем
+./test-api.sh
 ```
 
-### Create a new post
+### Примеры cURL запросов
+
+1. Получить все модели:
 ```bash
-curl -X POST http://localhost:3000/api/posts \
-  -H "Content-Type: application/json" \
-  -d '{"title": "My Post", "content": "Post content", "userId": 1}'
+curl http://localhost:3000/api/models
 ```
 
-## TypeScript Types
+2. Загрузить модель:
+```bash
+curl -X POST http://localhost:3000/api/models \
+  -F "title=Тестовая модель" \
+  -F "description=Описание модели" \
+  -F "tags=[\"test\", \"example\"]" \
+  -F "model=@path/to/model.stl"
+```
 
-The API uses TypeScript interfaces to ensure type safety:
+3. Поставить лайк:
+```bash
+curl -X POST http://localhost:3000/api/models/1/like
+```
 
-```typescript
-interface User {
-  id: number;
-  name: string;
-  email: string;
+## Ответы API
+
+### Успешный ответ
+```json
+{
+  "id": 1,
+  "title": "Название модели",
+  "description": "Описание",
+  "fileUrl": "/uploads/model.stl",
+  "thumbnailUrl": "/uploads/thumbnails/model.png",
+  "fileType": "stl",
+  "uploadedAt": "2024-01-20T12:00:00Z",
+  "userId": 1,
+  "tags": ["test", "example"],
+  "likes": 0,
+  "downloads": 0
 }
+```
 
-interface Post {
-  id: number;
-  title: string;
-  content: string;
-  userId: number;
+### Ответ с ошибкой
+```json
+{
+  "message": "Текст ошибки"
 }
-``` 
+```
+
+## Разработка
+
+### Сборка проекта
+```bash
+npm run build
+```
+
+### Запуск тестов
+```bash
+npm test
+```
+
+## Лицензия
+
+MIT 
