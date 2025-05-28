@@ -1,7 +1,9 @@
-import { Router, RequestHandler } from 'express';
+import { Router, Request, Response } from 'express';
 import { Model3D, ModelResponse, ModelFileType, ErrorResponse, CreateModelDto } from '../types';
 import { upload } from '../config/upload';
 import path from 'path';
+import { auth, requireAdmin } from '../middleware/auth';
+import { AuthRequest } from '../types/auth';
 
 const router: Router = Router();
 
@@ -23,7 +25,7 @@ let models: Model3D[] = [
 ];
 
 // Получить все модели с пагинацией и фильтрацией
-router.get('/', ((req, res) => {
+router.get('/', (req: Request, res: Response) => {
   const { page = '1', limit = '20', tag, sort } = req.query;
   let filteredModels = [...models];
 
@@ -54,10 +56,10 @@ router.get('/', ((req, res) => {
     limit: parseInt(limit as string),
     data: paginatedModels
   });
-}) as RequestHandler);
+});
 
 // Получить одну модель
-router.get('/:id', ((req, res) => {
+router.get('/:id', (req: Request, res: Response) => {
   const model = models.find(m => m.id === parseInt(req.params.id));
   if (!model) {
     const errorResponse: ErrorResponse = { message: 'Модель не найдена' };
@@ -75,11 +77,11 @@ router.get('/:id', ((req, res) => {
   };
 
   res.json(modelResponse);
-}) as RequestHandler);
+});
 
-// Загрузить новую модель
-router.post('/', upload.single('model'), ((req, res) => {
-  const modelData: CreateModelDto = req.body;
+// Загрузить новую модель (требуется авторизация)
+router.post('/', auth, upload.single('model'), (req: Request & AuthRequest, res: Response) => {
+  const modelData = req.body as CreateModelDto;
   const modelFile = req.file;
 
   if (!modelFile) {
@@ -96,7 +98,7 @@ router.post('/', upload.single('model'), ((req, res) => {
     fileUrl: `/uploads/${modelFile.filename}`,
     fileType: fileExtension as ModelFileType,
     uploadedAt: new Date(),
-    userId: 1, // В реальном приложении получать из аутентифицированного пользователя
+    userId: req.user!.userId,
     tags: modelData.tags,
     likes: 0,
     downloads: 0
@@ -104,10 +106,10 @@ router.post('/', upload.single('model'), ((req, res) => {
 
   models.push(newModel);
   res.status(201).json(newModel);
-}) as RequestHandler);
+});
 
-// Поставить лайк модели
-router.post('/:id/like', ((req, res) => {
+// Поставить лайк модели (требуется авторизация)
+router.post('/:id/like', auth, (req: Request & AuthRequest, res: Response) => {
   const model = models.find(m => m.id === parseInt(req.params.id));
   if (!model) {
     const errorResponse: ErrorResponse = { message: 'Модель не найдена' };
@@ -116,10 +118,10 @@ router.post('/:id/like', ((req, res) => {
 
   model.likes += 1;
   res.json({ likes: model.likes });
-}) as RequestHandler);
+});
 
-// Скачать модель
-router.get('/:id/download', ((req, res) => {
+// Скачать модель (требуется авторизация)
+router.get('/:id/download', auth, (req: Request & AuthRequest, res: Response) => {
   const model = models.find(m => m.id === parseInt(req.params.id));
   if (!model) {
     const errorResponse: ErrorResponse = { message: 'Модель не найдена' };
@@ -130,6 +132,18 @@ router.get('/:id/download', ((req, res) => {
   
   // В реальном приложении здесь будет потоковая передача файла из хранилища
   res.download(path.join(__dirname, '..', '..', model.fileUrl));
-}) as RequestHandler);
+});
+
+// Удалить модель (только для админов)
+router.delete('/:id', auth, requireAdmin, (req: Request & AuthRequest, res: Response) => {
+  const modelIndex = models.findIndex(m => m.id === parseInt(req.params.id));
+  if (modelIndex === -1) {
+    const errorResponse: ErrorResponse = { message: 'Модель не найдена' };
+    return res.status(404).json(errorResponse);
+  }
+
+  models.splice(modelIndex, 1);
+  res.status(204).send();
+});
 
 export default router; 

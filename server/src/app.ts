@@ -5,6 +5,7 @@ import { ErrorResponse } from './types';
 
 // Маршруты
 import modelRoutes from './routes/models';
+import authRoutes from './routes/auth';
 
 const app: Express = express();
 
@@ -23,6 +24,7 @@ app.get('/', (_req: Request, res: Response) => {
 });
 
 // API Маршруты
+app.use('/api/auth', authRoutes);
 app.use('/api/models', modelRoutes);
 
 // Обработчик ошибок

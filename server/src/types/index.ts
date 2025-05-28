@@ -45,4 +45,7 @@ export interface User {
   id: number;           // ID пользователя
   name: string;         // Имя пользователя
   email: string;        // Email пользователя
+  password: string;     // Хэшированный пароль
+  role: string;         // Роль пользователя (user/admin)
+  createdAt: Date;      // Дата создания
 } 
