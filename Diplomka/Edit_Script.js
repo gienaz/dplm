@@ -4,8 +4,84 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { PMREMGenerator } from 'three';
 
+// Получить превьюшку модели: const dataURL = localStorage.getItem('previewDataUrl');
+let modelConfig = {
+  name: "enter name",
+  transform: {
+    location: {
+      x:0,
+      y:0,
+      z:0
+    },
+    rotation:{
+      x:0,
+      y:0,
+      z:0
+    },
+    scale:{
+      x:1,
+      y:1,
+      z:1
+    }
+  },
+  camera:{
+    fov:30,
+    near:0.05,
+    position: {
+      x : 0,
+      y : 0,
+      z : 0
+    },
+    rotation: {
+      x : 0,
+      y : 0,
+      z : 0
+    }
+  },
+  wireframe:{
+    toggle:false,
+    onlyWireframe:false,
+    color: "#ffffff",
+    opacity:1
+  },
+  background:{
+    toggle:true,
+    bgType: "hdri",
+    flatcolor: "#000000",
+    gradColor1: "#111111",
+    gradColor2: "#000000",
+    gradType: "vertical"
+  },
+  grid:{
+    toggle:true,
+    color: "#111111"
+  },
+  lighting:{
+    hdri:{
+      toggle:true,
+      image:" ",
+      brightness:1.1,
+      rotation:0
+    }
+  },
+  materials:{
+    matType:"primal",
+    textureSets:[{
+      baseColor: " ",
+      roughness: " ",
+      metallic: " ",
+      normalMap: " "
+    }]
+  }
+};
+
+function SaveConfig(){
+  document.getElementById("debug").textContent = JSON.stringify(modelConfig, null, 2);
+}
+
+
 // Рендерер
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha:true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -45,7 +121,7 @@ function animate() {
 animate();
 
 loader.load(
-  'model.glb',
+  'model1.glb',
   (gltf) => {
     const model = gltf.scene;
     scene.add(model);
@@ -96,38 +172,65 @@ loader.load(
     }
   }
   
-  function syncSliderAndNumber(slider, number, callback) {
-    slider.addEventListener('input', () => {
-      number.value = slider.value;
-      callback(parseFloat(slider.value));
-    });
-    number.addEventListener('input', () => {
-      slider.value = number.value;
-      callback(parseFloat(number.value));
-    });
-  }
+function syncSliderAndNumber(slider, number, onValue, onConfigUpdate) {
+  slider.addEventListener('input', () => {
+    number.value = slider.value;
+    onValue(parseFloat(slider.value));
+    if (onConfigUpdate) onConfigUpdate(parseFloat(slider.value));
+  });
+  number.addEventListener('input', () => {
+    slider.value = number.value;
+    onValue(parseFloat(number.value));
+    if (onConfigUpdate) onConfigUpdate(parseFloat(number.value));
+  });
+}
 
 
   function applyToModels(callback) {
     models.forEach(model => callback(model));
   }
   
-//Position
+// Position
+syncSliderAndNumber(posX, posXn,
+  v => applyToModels(obj => obj.position.x = v),
+  v => modelConfig.transform.location.x = v
+);
+syncSliderAndNumber(posY, posYn,
+  v => applyToModels(obj => obj.position.y = v),
+  v => modelConfig.transform.location.y = v
+);
+syncSliderAndNumber(posZ, posZn,
+  v => applyToModels(obj => obj.position.z = v),
+  v => modelConfig.transform.location.z = v
+);
 
-  syncSliderAndNumber(posX, posXn, v => applyToModels(obj => obj.position.x = v));
-  syncSliderAndNumber(posY, posYn, v => applyToModels(obj => obj.position.y = v));
-  syncSliderAndNumber(posZ, posZn, v => applyToModels(obj => obj.position.z = v));
-  
-  // Rotation (градусы -> радианы)
-  syncSliderAndNumber(rotX, rotXn, v => applyToModels(obj => obj.rotation.x = v * Math.PI / 180));
-  syncSliderAndNumber(rotY, rotYn, v => applyToModels(obj => obj.rotation.y = v * Math.PI / 180));
-  syncSliderAndNumber(rotZ, rotZn, v => applyToModels(obj => obj.rotation.z = v * Math.PI / 180));
-  
-  // Scale
-  syncSliderAndNumber(sclX, sclXn, v => applyToModels(obj => obj.scale.x = v));
-  syncSliderAndNumber(sclY, sclYn, v => applyToModels(obj => obj.scale.y = v));
-  syncSliderAndNumber(sclZ, sclZn, v => applyToModels(obj => obj.scale.z = v));
+// Rotation (градусы -> радианы)
+syncSliderAndNumber(rotX, rotXn,
+  v => applyToModels(obj => obj.rotation.x = v * Math.PI / 180),
+  v => modelConfig.transform.rotation.x = v
+);
+syncSliderAndNumber(rotY, rotYn,
+  v => applyToModels(obj => obj.rotation.y = v * Math.PI / 180),
+  v => modelConfig.transform.rotation.y = v
+);
+syncSliderAndNumber(rotZ, rotZn,
+  v => applyToModels(obj => obj.rotation.z = v * Math.PI / 180),
+  v => modelConfig.transform.rotation.z = v
+);
 
+// Scale
+syncSliderAndNumber(sclX, sclXn,
+  v => applyToModels(obj => obj.scale.x = v),
+  v => modelConfig.transform.scale.x = v
+);
+syncSliderAndNumber(sclY, sclYn,
+  v => applyToModels(obj => obj.scale.y = v),
+  v => modelConfig.transform.scale.y = v
+);
+syncSliderAndNumber(sclZ, sclZn,
+  v => applyToModels(obj => obj.scale.z = v),
+  v => modelConfig.transform.scale.z = v
+);
 //FOV
 const fovSlider = document.getElementById('fov');
 const fovNumber = document.getElementById('fovn');
@@ -137,6 +240,7 @@ const nearNumber = document.getElementById('ncdn');
 // Синхронизация FOV
 function setFOV(val) {
   camera.fov = parseFloat(val);
+  modelConfig.camera.fov = camera.fov;
   camera.updateProjectionMatrix(); // обязательно!
 }
 fovSlider.addEventListener('input', e => {
@@ -151,6 +255,8 @@ fovNumber.addEventListener('input', e => {
 // Синхронизация near
 function setNear(val) {
   camera.near = parseFloat(val);
+  modelConfig.camera.near = camera.near;
+
   camera.updateProjectionMatrix(); // обязательно!
 }
 nearSlider.addEventListener('input', e => {
@@ -175,6 +281,14 @@ const onlyWireframeSwitch = document.getElementById('onlyWireframeSwitch');
 const wireframeHelpers = new Map();
 
 function setWireframeProps(color, opacity, toggle, onlyWireframe) {
+
+  modelConfig.wireframe.toggle = toggle;
+  modelConfig.wireframe.onlyWireframe = onlyWireframe;
+  modelConfig.wireframe.color = color;
+  modelConfig.wireframe.opacity = opacity;
+  
+
+
   models.forEach(model => {
     model.traverse(obj => {
       // Пропускаем все wireframe-меши, чтобы не зациклиться!
@@ -255,8 +369,6 @@ function setWireframeProps(color, opacity, toggle, onlyWireframe) {
       }
     });
   });
-
-  // После обхода: удаляем wireframe-меши, если они больше не нужны
   if (!toggle || onlyWireframe) {
     wireframeHelpers.forEach((wireMesh, obj) => {
       if (wireMesh.parent) wireMesh.parent.remove(wireMesh);
@@ -269,6 +381,7 @@ function setWireframeProps(color, opacity, toggle, onlyWireframe) {
 
   wireSwitch.addEventListener('input', (e) =>{
     setWireframeProps(wireColor.value, wireOpacity.value, wireSwitch.checked, onlyWireframeSwitch.checked);
+
 });
 
 onlyWireframeSwitch.addEventListener('input', (e) => {
@@ -302,8 +415,21 @@ const bgSwitch = document.getElementById('bgSwitch');
 
 
 function updateBackground() {
+  
   // Определяем выбранный тип
   
+  modelConfig.background.toggle = bgSwitch.checked;
+  for (let radio of bgTypeRadios) {
+      if (radio.checked) {
+        modelConfig.background.bgType = radio.value;
+        break;
+      }
+    }
+  modelConfig.background.flatcolor = bgColor.value;
+  modelConfig.background.gradColor1 = bgGradColor1.value;
+  modelConfig.background.gradColor2 = bgGradColor2.value;
+  modelConfig.background.gradType = bgGradDirection.value;
+
   if (!bgSwitch.checked) {
       // Фон выключен — делаем прозрачным
       renderer.setClearColor(0x000000, 0); // прозрачный фон рендерера
@@ -363,6 +489,10 @@ const gridColor = document.getElementById('gridColor');
 
 // Функция обновления сетки
 function updateGrid() {
+
+  modelConfig.grid.toggle = gridSwitch.checked;
+  modelConfig.grid.color = gridColor.value;
+
   // Вкл/выкл видимость
   grid.visible = gridSwitch.checked;
 
@@ -484,6 +614,12 @@ hdriSwitch.addEventListener('change', () => {
 })();
 
 function loadHdriEnvironment(hdriPath) {
+
+  modelConfig.lighting.hdri.toggle = hdriSwitch.checked;
+  modelConfig.lighting.hdri.image = hdriPath;
+
+
+
   if (!hdriSwitch.checked || !hdriPath) {
     scene.environment = null;
     scene.background = null;
@@ -543,6 +679,7 @@ function loadHdriEnvironment(hdriPath) {
 function updateHdriRotation() {
   const angle = parseFloat(hdriRotation.value);
   hdriRotationNum.value = angle;
+  modelConfig.lighting.hdri.rotation = angle;
   if (scene.environment) {
     scene.environmentRotation = new THREE.Euler(0, angle, 0);
   }
@@ -561,6 +698,8 @@ hdriRotationNum.addEventListener('input', function() {
 
 function updateHdriBrightness() {
   const value = parseFloat(hdriBrightness.value);
+  modelConfig.lighting.hdri.brightness = value;
+
   renderer.toneMappingExposure = value;
   hdriBrightnessNum.value = value;
 }
@@ -610,47 +749,9 @@ function saveOriginalMaterials(models) {
   });
 }
 
-// Смена материала на выбранный тип для одного слота
-function changeMaterialType(type, meshIndex, matIndex) {
-  // Найти нужный Mesh
-  const mesh = originalMaterials.find(
-    m => m.meshIndex === meshIndex && m.matIndex === matIndex
-  )?.mesh;
-  if (!mesh) return;
-
-  let newMaterial;
-  if (type === 'pbr') {
-    newMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      metalness: 0.5,
-      roughness: 0.5
-    });
-  } else if (type === 'matcap') {
-    newMaterial = new THREE.MeshMatcapMaterial({
-      color: 0xffffff,
-      matcap: matcapTexture
-    });
-  } else if (type === 'primal') {
-    const orig = originalMaterials.find(
-      m => m.meshIndex === meshIndex && m.matIndex === matIndex
-    );
-    if (orig && orig.material) {
-      newMaterial = orig.material.clone();
-    } else {
-      newMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc });
-    }
-  }
-
-  if (Array.isArray(mesh.material) && mesh.material[matIndex]) {
-    mesh.material[matIndex] = newMaterial;
-  } else if (matIndex === 0) {
-    mesh.material = newMaterial;
-  }
-  if (mesh.material) mesh.material.needsUpdate = true;
-}
-
 // Применить материал всем слотам всех моделей
 function applyMaterialTypeToAll(type) {
+  modelConfig.materials.matType = type;
   models.forEach((model, meshIndex) => {
     model.traverse(obj => {
       if (obj.isMesh && obj.material) {
@@ -859,3 +960,94 @@ document.getElementById('materialSlot').addEventListener('change', function() {
 });
 
 // В будущем texturesMemory можно заменить на IndexedDB или серверное хранилище для постоянного сохранения текстур и их привязки к слотам.
+
+
+
+// сохранение конфига
+
+
+// Обработчик на кнопку сохранения
+
+const saveBtn = document.getElementById('saveBtn');
+const nameField = document.getElementById("Model_name");
+saveBtn.addEventListener('click', () => {
+  if(nameField.value.length > 2){
+    modelConfig.name = nameField.value;
+    saveCameraTransform();
+    savePreview(renderer,scene,camera);
+    showPreview(modelConfig.preview);
+    SaveConfig();
+  }
+  else{
+  triggerShakeRed(nameField);
+  }
+});
+
+const previewImg = document.getElementById("preview");
+function showPreview(url){
+  preview.src = localStorage.getItem('previewDataUrl');;
+  previewImg.style.display = "block";
+  setTimeout(() => {
+    previewImg.style.display = "none";
+  }, 2000);
+}
+
+function savePreview(renderer, scene, camera, cropWidth = 900, cropHeight = 600) {
+  const originalSize = renderer.getSize(new THREE.Vector2());
+  const originalPixelRatio = renderer.getPixelRatio();
+  const originalBackground = scene.background;
+
+  // Делаем фон прозрачным
+  scene.background = null;
+
+  // Рендерим в оригинальном размере
+  renderer.setPixelRatio(1);
+  renderer.setSize(originalSize.x, originalSize.y, false);
+  renderer.render(scene, camera);
+
+  // Получаем canvas и создаём crop-canvas
+  const srcCanvas = renderer.domElement;
+  const cropCanvas = document.createElement('canvas');
+  cropCanvas.width = cropWidth;
+  cropCanvas.height = cropHeight;
+  const ctx = cropCanvas.getContext('2d');
+
+  // Копируем центральную часть
+  const sx = Math.max(0, (srcCanvas.width - cropWidth) / 2);
+  const sy = Math.max(0, (srcCanvas.height - cropHeight) / 2);
+  ctx.clearRect(0, 0, cropWidth, cropHeight);
+  ctx.drawImage(srcCanvas, sx, sy, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
+  // Сохраняем PNG с прозрачностью
+  const dataURL = cropCanvas.toDataURL("image/png");
+  localStorage.setItem('previewDataUrl', dataURL);
+  /*const a = document.createElement('a');
+  a.href = dataURL;
+  a.download = 'screenshot_cropped.png';
+  a.click();*/
+  // Восстанавливаем параметры
+  renderer.setSize(originalSize.x, originalSize.y, false);
+  renderer.setPixelRatio(originalPixelRatio);
+  scene.background = originalBackground;
+}
+
+function saveCameraTransform(){
+  modelConfig.camera.position.x = camera.position.x;
+  modelConfig.camera.position.y = camera.position.y;
+  modelConfig.camera.position.z = camera.position.z;
+
+  modelConfig.camera.rotation.x = camera.rotation.x;
+  modelConfig.camera.rotation.y = camera.rotation.y;
+  modelConfig.camera.rotation.z = camera.rotation.z;
+};
+
+function triggerShakeRed(element) {
+  element.classList.remove('shake-red'); // сбрасываем, если уже есть
+  // Для перезапуска анимации
+  void element.offsetWidth; 
+  element.classList.add('shake-red');
+  // Можно убрать класс после анимации, чтобы потом снова сработало
+  setTimeout(() => {
+    element.classList.remove('shake-red');
+  }, 1000);
+}

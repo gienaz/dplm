@@ -1,19 +1,21 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <title>Editor</title></style>
-</head>
-<link rel="stylesheet" href="model_editor.css">
-<body>
-
-  <div class="header"> <!--UpperTab-->
-    <div class="cont">
-      <div>Currently editing</div>
-      <div class="Model_name"><b>Tutto mondo V1.</b></div>
+  <head>
+    <meta charset="utf-8">
+    <title>Editor</title></style>
+  </head>
+  <link rel="stylesheet" href="model_editor.css">
+  <body>
+    
+    <div class="header"> <!--UpperTab-->
+      <div class="cont">
+        <input type="button" class="SaveButton" id="saveBtn" value="Save">
+        <div>Currently editing</div>
+        <input  id="Model_name" type="text" placeholder="Enter Model Name" maxlength="29"/>
+      </div>
     </div>
-  </div>
-
+    
+    <img id="preview"/>
   <div class="preferences"> <!--Preferences-->
     <div class="tabs"> <!--tabs-->
       <div class="tab-headers">
@@ -320,9 +322,10 @@
     <div class="tab-content" id="tab6"> <!--ARVR Settings-->
       <p>Ar/Vr WIP.</p>
     </div>
+    <div id="togglePreferences">Hide Preferences</div>
   </div>
   
-  
+  <pre  id="debug">debug</pre >
   <script type="importmap">
     {
       "imports": {
