@@ -16,30 +16,25 @@ interface JwtPayload {
   email: string;
 }
 
-export const auth = (req: AuthRequest, res: Response, next: NextFunction): void => {
+export const auth = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void | Response> => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
-      res.status(401).json({ error: 'Пользователь не авторизован' });
-      return;
+      return res.status(401).json({ error: 'Please authenticate.' });
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
-    mockDb.findUserById(decoded.id)
-      .then(user => {
-        if (!user) {
-          res.status(401).json({ error: 'Пользователь не авторизован' });
-          return;
-        }
-        req.user = { id: user.id, email: user.email };
-        next();
-      })
-      .catch(() => {
-        res.status(401).json({ error: 'Пользователь не авторизован' });
-      });
+    const user = await mockDb.findUserById(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({ error: 'Please authenticate.' });
+    }
+
+    req.user = { id: user.id, email: user.email };
+    next();
   } catch (error) {
-    res.status(401).json({ error: 'Пользователь не авторизован' });
+    return res.status(401).json({ error: 'Please authenticate.' });
   }
 };
 

@@ -1,6 +1,21 @@
 import { mockDb } from '../src/data/mockDb';
 import { generateToken } from '../src/middleware/auth';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
+
+const UPLOADS_DIR = path.join(__dirname, '../../uploads');
+
+export function cleanupUploads() {
+  if (fs.existsSync(UPLOADS_DIR)) {
+    const files = fs.readdirSync(UPLOADS_DIR);
+    for (const file of files) {
+      fs.unlinkSync(path.join(UPLOADS_DIR, file));
+    }
+  } else {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+}
 
 export async function createTestUser(email = 'test@example.com', password = 'password123', username = 'testuser') {
   const hashedPassword = await bcrypt.hash(password, 10);

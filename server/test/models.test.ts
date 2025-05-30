@@ -3,19 +3,29 @@ import { Express } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { createServer } from '../src/app';
-import { clearDatabase, createTestUser, createTestModel } from './helpers';
+import { clearDatabase, createTestUser, createTestModel, cleanupUploads } from './helpers';
 
 let app: Express;
 let userToken: string;
 let testUserId: number;
 let testModelId: number;
+const TEST_FILES_DIR = path.join(__dirname, 'test-files');
+const testFilePath = path.join(TEST_FILES_DIR, 'test.stl');
 
 beforeAll(async () => {
   app = await createServer();
+  // Создаем директорию для тестовых файлов, если её нет
+  if (!fs.existsSync(TEST_FILES_DIR)) {
+    fs.mkdirSync(TEST_FILES_DIR, { recursive: true });
+  }
 });
 
 beforeEach(async () => {
   clearDatabase();
+  cleanupUploads();
+  
+  // Создаем тестовый файл перед каждым тестом
+  fs.writeFileSync(testFilePath, 'test file content');
   
   // Создаем тестового пользователя и модель
   const { user, token } = await createTestUser();
@@ -24,6 +34,22 @@ beforeEach(async () => {
   
   const model = await createTestModel(user.id);
   testModelId = model.id;
+});
+
+afterEach(() => {
+  // Очищаем тестовые файлы и загрузки после каждого теста
+  cleanupUploads();
+  if (fs.existsSync(testFilePath)) {
+    fs.unlinkSync(testFilePath);
+  }
+});
+
+afterAll(() => {
+  // Очищаем все тестовые директории после всех тестов
+  cleanupUploads();
+  if (fs.existsSync(TEST_FILES_DIR)) {
+    fs.rmSync(TEST_FILES_DIR, { recursive: true, force: true });
+  }
 });
 
 describe('3D Models Endpoints', () => {
@@ -90,6 +116,7 @@ describe('3D Models Endpoints', () => {
         .attach('model', testFilePath);
 
       expect(response.status).toBe(401);
+      expect(response.body).toHaveProperty('error', 'Please authenticate.');
     });
   });
 
