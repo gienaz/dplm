@@ -76,23 +76,6 @@ describe('3D Models Endpoints', () => {
   });
 
   describe('POST /api/models', () => {
-    const testFilePath = path.join(__dirname, 'test-files', 'test.stl');
-
-    beforeAll(() => {
-      // Создаем тестовый файл
-      if (!fs.existsSync(path.dirname(testFilePath))) {
-        fs.mkdirSync(path.dirname(testFilePath), { recursive: true });
-      }
-      fs.writeFileSync(testFilePath, 'test file content');
-    });
-
-    afterAll(() => {
-      // Удаляем тестовый файл
-      if (fs.existsSync(testFilePath)) {
-        fs.unlinkSync(testFilePath);
-      }
-    });
-
     it('should upload new model with authentication', async () => {
       const response = await request(app)
         .post('/api/models')
