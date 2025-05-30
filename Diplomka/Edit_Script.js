@@ -32,10 +32,10 @@ let modelConfig = {
       y : 0,
       z : 0
     },
-    rotation: {
-      x : 0,
-      y : 0,
-      z : 0
+    target:{
+      x:0,
+      y:0,
+      z:0
     }
   },
   wireframe:{
@@ -74,6 +74,7 @@ let modelConfig = {
     }]
   }
 };
+
 
 function SaveConfig(){
   document.getElementById("debug").textContent = JSON.stringify(modelConfig, null, 2);
@@ -1036,9 +1037,11 @@ function saveCameraTransform(){
   modelConfig.camera.position.y = camera.position.y;
   modelConfig.camera.position.z = camera.position.z;
 
-  modelConfig.camera.rotation.x = camera.rotation.x;
-  modelConfig.camera.rotation.y = camera.rotation.y;
-  modelConfig.camera.rotation.z = camera.rotation.z;
+  modelConfig.camera.target = {
+    x: controls.target.x,
+    y: controls.target.y,
+    z: controls.target.z
+  };
 };
 
 function triggerShakeRed(element) {
