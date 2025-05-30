@@ -1,149 +1,241 @@
 import { Router, Request, Response } from 'express';
-import { Model3D, ModelResponse, ModelFileType, ErrorResponse, CreateModelDto } from '../types';
-import { upload } from '../config/upload';
+import multer from 'multer';
 import path from 'path';
-import { auth, requireAdmin } from '../middleware/auth';
-import { AuthRequest } from '../types/auth';
+import { mockDb } from '../data/mockDb';
+import { auth, AuthRequest } from '../middleware/auth';
 
-const router: Router = Router();
+const router = Router();
 
-// Имитация базы данных
-let models: Model3D[] = [
-  {
-    id: 1,
-    title: 'Пример Модели',
-    description: 'Пример 3D модели',
-    fileUrl: '/uploads/sample.stl',
-    thumbnailUrl: '/uploads/thumbnails/sample.png',
-    fileType: ModelFileType.STL,
-    uploadedAt: new Date(),
-    userId: 1,
-    tags: ['пример', 'демо'],
-    likes: 0,
-    downloads: 0
+// Настройка multer для загрузки файлов
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, path.join(__dirname, '../../uploads'));
+  },
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
   }
-];
-
-// Получить все модели с пагинацией и фильтрацией
-router.get('/', (req: Request, res: Response) => {
-  const { page = '1', limit = '20', tag, sort } = req.query;
-  let filteredModels = [...models];
-
-  // Применить фильтр по тегу
-  if (tag) {
-    filteredModels = filteredModels.filter(model => 
-      model.tags.includes(tag as string)
-    );
-  }
-
-  // Применить сортировку
-  if (sort === 'likes') {
-    filteredModels.sort((a, b) => b.likes - a.likes);
-  } else if (sort === 'downloads') {
-    filteredModels.sort((a, b) => b.downloads - a.downloads);
-  } else if (sort === 'recent') {
-    filteredModels.sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime());
-  }
-
-  // Применить пагинацию
-  const startIndex = (parseInt(page as string) - 1) * parseInt(limit as string);
-  const endIndex = startIndex + parseInt(limit as string);
-  const paginatedModels = filteredModels.slice(startIndex, endIndex);
-
-  res.json({
-    total: filteredModels.length,
-    page: parseInt(page as string),
-    limit: parseInt(limit as string),
-    data: paginatedModels
-  });
 });
 
-// Получить одну модель
-router.get('/:id', (req: Request, res: Response) => {
-  const model = models.find(m => m.id === parseInt(req.params.id));
-  if (!model) {
-    const errorResponse: ErrorResponse = { message: 'Модель не найдена' };
-    return res.status(404).json(errorResponse);
-  }
-
-  // Здесь можно добавить увеличение просмотров или аналитику
-
-  const modelResponse: ModelResponse = {
-    ...model,
-    author: {
-      id: 1, // В реальном приложении получать из базы данных
-      name: 'Иван Петров'
+const upload = multer({
+  storage,
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = ['.stl', '.obj', '.fbx', '.gltf', '.glb'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedTypes.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Неподдерживаемый тип файла'));
     }
-  };
-
-  res.json(modelResponse);
+  },
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB
+  }
 });
 
-// Загрузить новую модель (требуется авторизация)
-router.post('/', auth, upload.single('model'), (req: Request & AuthRequest, res: Response) => {
-  const modelData = req.body as CreateModelDto;
-  const modelFile = req.file;
+// Получение списка моделей с пагинацией
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const offset = (page - 1) * limit;
 
-  if (!modelFile) {
-    const errorResponse: ErrorResponse = { message: 'Файл не загружен' };
-    return res.status(400).json(errorResponse);
+    const models = await mockDb.getModels(offset, limit);
+    const total = mockDb['models'].length;
+
+    return res.json({
+      models,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Ошибка при получении списка моделей:', error);
+    return res.status(500).json({ error: 'Ошибка при получении списка моделей' });
   }
-
-  const fileExtension = path.extname(modelFile.originalname).toLowerCase().substring(1);
-  
-  const newModel: Model3D = {
-    id: models.length + 1,
-    title: modelData.title,
-    description: modelData.description,
-    fileUrl: `/uploads/${modelFile.filename}`,
-    fileType: fileExtension as ModelFileType,
-    uploadedAt: new Date(),
-    userId: req.user!.userId,
-    tags: modelData.tags,
-    likes: 0,
-    downloads: 0
-  };
-
-  models.push(newModel);
-  res.status(201).json(newModel);
 });
 
-// Поставить лайк модели (требуется авторизация)
-router.post('/:id/like', auth, (req: Request & AuthRequest, res: Response) => {
-  const model = models.find(m => m.id === parseInt(req.params.id));
-  if (!model) {
-    const errorResponse: ErrorResponse = { message: 'Модель не найдена' };
-    return res.status(404).json(errorResponse);
-  }
+// Поиск моделей
+router.get('/search', async (req: Request, res: Response) => {
+  try {
+    const { query, tag } = req.query;
+    let results = mockDb['models'];
 
-  model.likes += 1;
-  res.json({ likes: model.likes });
+    if (query) {
+      results = results.filter(model =>
+        model.title.toLowerCase().includes((query as string).toLowerCase()) ||
+        model.description.toLowerCase().includes((query as string).toLowerCase())
+      );
+    }
+
+    if (tag) {
+      results = results.filter(model =>
+        model.tags.includes(tag as string)
+      );
+    }
+
+    return res.json(results);
+  } catch (error) {
+    console.error('Ошибка при поиске моделей:', error);
+    return res.status(500).json({ error: 'Ошибка при поиске моделей' });
+  }
 });
 
-// Скачать модель (требуется авторизация)
-router.get('/:id/download', auth, (req: Request & AuthRequest, res: Response) => {
-  const model = models.find(m => m.id === parseInt(req.params.id));
-  if (!model) {
-    const errorResponse: ErrorResponse = { message: 'Модель не найдена' };
-    return res.status(404).json(errorResponse);
-  }
+// Получение топ-рейтинговых моделей
+router.get('/top-rated', async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+    const models = [...mockDb['models']];
 
-  model.downloads += 1;
-  
-  // В реальном приложении здесь будет потоковая передача файла из хранилища
-  res.download(path.join(__dirname, '..', '..', model.fileUrl));
+    const modelsWithRating = models.map(model => {
+      const ratings = mockDb['ratings'].filter(r => r.modelId === model.id);
+      const avgRating = ratings.length > 0
+        ? ratings.reduce((sum, r) => sum + r.value, 0) / ratings.length
+        : 0;
+      return { ...model, rating: avgRating };
+    });
+
+    // Сортируем по рейтингу и ограничиваем количество
+    const topRated = modelsWithRating
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, limit);
+
+    return res.json(topRated);
+  } catch (error) {
+    console.error('Ошибка при получении топ-рейтинговых моделей:', error);
+    return res.status(500).json({ error: 'Ошибка при получении топ-рейтинговых моделей' });
+  }
 });
 
-// Удалить модель (только для админов)
-router.delete('/:id', auth, requireAdmin, (req: Request & AuthRequest, res: Response) => {
-  const modelIndex = models.findIndex(m => m.id === parseInt(req.params.id));
-  if (modelIndex === -1) {
-    const errorResponse: ErrorResponse = { message: 'Модель не найдена' };
-    return res.status(404).json(errorResponse);
+// Получение модели по ID
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const model = await mockDb.getModelById(parseInt(req.params.id));
+    if (!model) {
+      return res.status(404).json({ error: 'Модель не найдена' });
+    }
+    return res.json(model);
+  } catch (error) {
+    console.error('Ошибка при получении модели:', error);
+    return res.status(500).json({ error: 'Ошибка при получении модели' });
+  }
+});
+
+// Загрузка новой модели
+router.post('/', auth, upload.single('model'), async (req: AuthRequest, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Пользователь не авторизован' });
   }
 
-  models.splice(modelIndex, 1);
-  res.status(204).send();
+  if (!req.file) {
+    return res.status(400).json({ error: 'Файл модели не загружен' });
+  }
+
+  try {
+    const { title, description, tags } = req.body;
+    const parsedTags = tags ? JSON.parse(tags) : [];
+
+    const model = await mockDb.createModel({
+      title,
+      description,
+      fileName: req.file.filename,
+      fileUrl: `/uploads/${req.file.filename}`,
+      thumbnailUrl: '/thumbnails/default.png',
+      userId: req.user.id,
+      tags: parsedTags
+    });
+
+    return res.status(201).json(model);
+  } catch (error) {
+    console.error('Ошибка при создании модели:', error);
+    return res.status(500).json({ error: 'Ошибка при создании модели' });
+  }
+});
+
+// Обновление модели
+router.put('/:id', auth, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Пользователь не авторизован' });
+    }
+
+    const modelId = parseInt(req.params.id);
+    const model = await mockDb.getModelById(modelId);
+
+    if (!model) {
+      return res.status(404).json({ error: 'Модель не найдена' });
+    }
+
+    if (model.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Нет прав на редактирование этой модели' });
+    }
+
+    const updatedModel = await mockDb.updateModel(modelId, {
+      ...req.body,
+      userId: model.userId // Сохраняем оригинального владельца
+    });
+
+    return res.json(updatedModel);
+  } catch (error) {
+    console.error('Ошибка при обновлении модели:', error);
+    return res.status(500).json({ error: 'Ошибка при обновлении модели' });
+  }
+});
+
+// Удаление модели
+router.delete('/:id', auth, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Пользователь не авторизован' });
+    }
+
+    const modelId = parseInt(req.params.id);
+    const model = await mockDb.getModelById(modelId);
+
+    if (!model) {
+      return res.status(404).json({ error: 'Модель не найдена' });
+    }
+
+    if (model.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Нет прав на удаление этой модели' });
+    }
+
+    await mockDb.deleteModel(modelId);
+    return res.json({ message: 'Модель успешно удалена' });
+  } catch (error) {
+    console.error('Ошибка при удалении модели:', error);
+    return res.status(500).json({ error: 'Ошибка при удалении модели' });
+  }
+});
+
+// Оценка модели
+router.post('/:id/rate', auth, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Пользователь не авторизован' });
+    }
+
+    const modelId = parseInt(req.params.id);
+    const value = parseInt(req.body.value);
+
+    if (isNaN(value) || value < 1 || value > 5) {
+      return res.status(400).json({ error: 'Оценка должна быть числом от 1 до 5' });
+    }
+
+    const model = await mockDb.getModelById(modelId);
+    if (!model) {
+      return res.status(404).json({ error: 'Модель не найдена' });
+    }
+
+    const rating = await mockDb.rateModel(req.user.id, modelId, value);
+    return res.json(rating);
+  } catch (error) {
+    console.error('Ошибка при оценке модели:', error);
+    return res.status(500).json({ error: 'Ошибка при оценке модели' });
+  }
 });
 
 export default router; 
