@@ -2,9 +2,12 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { GLTFExporter } from 'https://unpkg.com/three@0.154.0/examples/jsm/exporters/GLTFExporter.js';
+
 import { PMREMGenerator } from 'three';
 
 // Получить превьюшку модели: const dataURL = localStorage.getItem('previewDataUrl');
+const modelIndex = 1;
 let modelConfig = {
   name: "enter name",
   transform: {
@@ -78,6 +81,20 @@ let modelConfig = {
 
 function SaveConfig(){
   document.getElementById("debug").textContent = JSON.stringify(modelConfig, null, 2);
+
+  //скачивание json - только для фронтенда
+   const jsonStr = JSON.stringify(modelConfig, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "modelConfig.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    URL.revokeObjectURL(url);
 }
 
 
@@ -107,22 +124,10 @@ const controls = new OrbitControls(camera, renderer.domElement);
 const grid = new THREE.GridHelper(20, 20, 0x111111, 0x111111);
 scene.add(grid);
 
-// GLTFLoader для загрузки GLB-модели
-const loader = new GLTFLoader();
 
-let mixer = null;
-
-function animate() {
-  requestAnimationFrame(animate);
-  if (mixer) mixer.update(0.008); // обновляем анимацию, если она есть
-  if (controls) controls.update();
-  renderer.render(scene, camera);
-}
-
-animate();
-
+/*
 loader.load(
-  'model1.glb',
+  'model.glb',
   (gltf) => {
     const model = gltf.scene;
     scene.add(model);
@@ -137,8 +142,40 @@ loader.load(
       // mixer.clipAction(gltf.animations[0]).play(); // и т.д.
     }
   }
-);
+);*/
 
+// GLTFLoader для загрузки GLB-модели
+const loader = new GLTFLoader();
+
+let mixer = null;
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (mixer) mixer.update(0.008); // обновляем анимацию, если она есть
+  if (controls) controls.update();
+  renderer.render(scene, camera);
+}
+
+animate();
+
+const modelDataUrl = localStorage.getItem('myGLBModel');
+loader.load(
+  modelDataUrl ? modelDataUrl : alert('failed to load model'),
+  (gltf) => {
+    const model = gltf.scene;
+    scene.add(model);
+    models.push(model);
+    fillMaterialSlotSelector(models); 
+    saveOriginalMaterials(models);
+    frameModel(model, camera, controls);
+    updateBackground();
+
+    // Если есть анимации, создаём mixer
+    if (gltf.animations && gltf.animations.length) {
+      mixer = new THREE.AnimationMixer(model);
+      // mixer.clipAction(gltf.animations[0]).play(); // и т.д.
+    }
+  });
 
   
   renderer.shadowMap.enabled = true;
@@ -508,7 +545,6 @@ gridSwitch.addEventListener('change', updateGrid);
 gridColor.addEventListener('input', updateGrid);
 
 // Инициализация
-updateGrid();
 
 
 
@@ -965,24 +1001,38 @@ document.getElementById('materialSlot').addEventListener('change', function() {
 
 
 // сохранение конфига
-
-
 // Обработчик на кнопку сохранения
 
 const saveBtn = document.getElementById('saveBtn');
+const publishBtn = document.getElementById("publishBtn");
 const nameField = document.getElementById("Model_name");
 saveBtn.addEventListener('click', () => {
   if(nameField.value.length > 2){
     modelConfig.name = nameField.value;
     saveCameraTransform();
     savePreview(renderer,scene,camera);
-    showPreview(modelConfig.preview);
-    SaveConfig();
+
+    showPreview(localStorage.getItem('previewDataUrl'));
+    publishBtn.style.opacity = "1";
   }
   else{
   triggerShakeRed(nameField);
   }
 });
+
+publishBtn.addEventListener('click', () => {
+    SaveConfig();
+
+    SaveToLocalStorage();
+
+    exportAndDownloadGLB(scene); // только для фронтенда
+
+});
+
+
+function SaveToLocalStorage(path){
+    savePreview(renderer,scene,camera, true);
+}
 
 const previewImg = document.getElementById("preview");
 function showPreview(url){
@@ -993,7 +1043,7 @@ function showPreview(url){
   }, 2000);
 }
 
-function savePreview(renderer, scene, camera, cropWidth = 900, cropHeight = 600) {
+function savePreview(renderer, scene, camera, download = false, cropWidth = 900, cropHeight = 600) {
   const originalSize = renderer.getSize(new THREE.Vector2());
   const originalPixelRatio = renderer.getPixelRatio();
   const originalBackground = scene.background;
@@ -1022,10 +1072,11 @@ function savePreview(renderer, scene, camera, cropWidth = 900, cropHeight = 600)
   // Сохраняем PNG с прозрачностью
   const dataURL = cropCanvas.toDataURL("image/png");
   localStorage.setItem('previewDataUrl', dataURL);
-  /*const a = document.createElement('a');
+  if(download){
+  const a = document.createElement('a');
   a.href = dataURL;
-  a.download = 'screenshot_cropped.png';
-  a.click();*/
+  a.download = 'screenshot.png';
+  a.click();}
   // Восстанавливаем параметры
   renderer.setSize(originalSize.x, originalSize.y, false);
   renderer.setPixelRatio(originalPixelRatio);
@@ -1053,4 +1104,43 @@ function triggerShakeRed(element) {
   setTimeout(() => {
     element.classList.remove('shake-red');
   }, 1000);
+}
+
+
+
+
+//скачивание модели - только для фронтенда
+
+function exportAndDownloadGLB(model) {
+  const exporter = new GLTFExporter();
+  exporter.parse(
+    model,
+    function(result) {
+      if (result instanceof ArrayBuffer) {
+        saveArrayBuffer(result, 'model.glb');
+      } else {
+        const output = JSON.stringify(result, null, 2);
+        saveString(output, 'model.gltf');
+      }
+    },
+    { binary: true }
+  );
+}
+
+function saveArrayBuffer(buffer, filename) {
+  const blob = new Blob([buffer], { type: 'application/octet-stream' });
+  const link = document.createElement('a');
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(link.href);
+    document.body.removeChild(link);
+  }, 100);
+}
+
+function saveString(text, filename) {
+  saveArrayBuffer(new TextEncoder().encode(text), filename);
 }

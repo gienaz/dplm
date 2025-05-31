@@ -81,10 +81,25 @@ input[type="number"]{
           width: 100px;
           font-size: 20px;
           border-radius: 10px;
+          transition: 0.2s;
         }
         #saveBtn:hover{
           transform: scale(1.2);
+        }
+        #publishBtn{
+          position: absolute;
+          right: -240px;
+          background-color: rgb(255, 203, 107);
+          border: 0;
+          height: 50px;
+          width: 100px;
+          font-size: 20px;
+          opacity: 0;
+          border-radius: 10px;
           transition: 0.2s;
+        }
+        #publishBtn:hover{
+          transform: scale(1.2);
         }
         #Model_name{
           background: 0;

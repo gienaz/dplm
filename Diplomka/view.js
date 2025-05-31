@@ -4,82 +4,26 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { PMREMGenerator } from 'three';
 // --- 1. Загрузка конфига (пример: из localStorage) ---
-let modelConfig = {
-  name: "enter name",
-  transform: {
-    location: {
-      x:0,
-      y:0,
-      z:0
-    },
-    rotation:{
-      x:0,
-      y:0,
-      z:0
-    },
-    scale:{
-      x:0.7,
-      y:0.7,
-      z:0.7
-    }
-  },
-  camera:{
-    fov:30,
-    near:0.05,
-    position: {
-      x : -1,
-      y : 2,
-      z : 1.78
-    },
-    target:{
-      x:-1,
-      y:1,
-      z:-0.04
-    }
-  },
-  wireframe:{
-    toggle:false,
-    onlyWireframe:false,
-    color: "#ffffff",
-    opacity:1
-  },
-  background:{
-    toggle:true,
-    bgType: "gradient", //hdri color gradient
-    flatcolor: "#000000",
-    gradColor1: "#010101",
-    gradColor2: "#000000",
-    gradType: "vertical" //vertical horizontal 135deg
-  },
-  grid:{
-    toggle:false,
-    color: "#111111"
-  },
-  lighting:{
-    hdri:{
-      toggle:true,
-      image:"/hdri/0/enviroment.hdr",
-      brightness:1.1,
-      rotation:0
-    }
-  },
-  materials:{
-    matType:"primal",
-    textureSets:[{
-      baseColor: " ",
-      roughness: " ",
-      metallic: " ",
-      normalMap: " "
-    }]
-  }
-};
+const modelIndex = 1;
+const assetPath = `/assets/${modelIndex}/`;
 
-if (!modelConfig) {
-  alert('Нет сохранённого конфига!');
-  throw new Error('Нет modelConfig');
-}
+// --- 1. Загружаем modelConfig.json ---
+let modelConfig = null;
+
+fetch(assetPath + 'modelConfig.json')
+  .then(res => res.json())
+  .then(config => {
+    modelConfig = config;
+    initScene();
+  })
+  .catch(err => {
+    alert('Ошибка загрузки modelConfig.json');
+    throw err;
+  });
 
 
+
+function initScene(){
 // --- 3. Three.js базовая сцена ---
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -109,7 +53,7 @@ if (modelConfig.grid?.toggle) {
 const loader = new GLTFLoader();
 let model;
 loader.load(
-  'model1.glb', // путь к твоей модели
+  assetPath + 'model.glb', // путь к твоей модели
   (gltf) => {
     model = gltf.scene;
     // --- 6. Применяем трансформации из конфига ---
@@ -384,4 +328,5 @@ function applyHdriLighting(renderer, scene, lightingConfig, onEnvMapReady) {
 
       if (onEnvMapReady) onEnvMapReady(envMap);
     });
+}
 }

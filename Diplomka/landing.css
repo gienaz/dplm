@@ -13,27 +13,43 @@ body {
 
 .header {
     text-align: center;
-    width: 700px;
+    width: 1000px;
     height: 300px;
     margin-top: 100px;
-    margin-left: calc(50% - 350px);
+    margin-left: calc(50% - 500px);
     display: flex;
     justify-content: space-between;
     align-items: center;
     .cont1{
-        width: 270px;
+        width: 400px;
         height: 300px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         align-items: flex-start;
+        .flex{
+            display: flex;
+            width: 90%;
+            height: 50px;
+            align-items: center;
+            gap: 30px;
+        }
         .cta-button {
-            background-color: #e7731e;
+            background-color: #f3924d;
             color: white;
-            padding: 15px 30px;
             text-decoration: none;
             border-radius: 15px;
             font-weight: bold;
+            border: 0;
+            outline: 0;
+            font-size: 20px;
+            height: 50px;
+            line-height: 50px;
+            padding: 0 20px ;
+            box-shadow: 2px 3px 2px rgba(0, 0, 0, 0.2);
+        }
+        #uploadBtn{
+            background-color: #fa854f;
         }
     }
     .cont2{
@@ -57,6 +73,40 @@ body {
     margin-left: calc(50% - 500px);
     border-radius: 30px;
     padding: 30px;
+}
+
+.uploadModal{
+    position: absolute;
+    width: 100%;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0);
+    transition: 0.3s;
+    top: 0;
+    pointer-events: none;
+    .cont{
+        width: 500px;
+        height: 200px;
+        background-color: white;
+        border-radius: 15px;
+        position: absolute;
+        left: calc(50% - 250px);
+        top: -300px;
+        padding: 30px 0px;
+        transition: 0.5s;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        .txt{
+            font-size: 25px;
+        }
+        button{
+            width: 150px;
+            height: 50px;
+            font-size: 15px;
+        }
+    }
 }
 
 #models h2 {

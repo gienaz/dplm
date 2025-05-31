@@ -1,18 +1,61 @@
 <!DOCTYPE html>
-<html lang="ru">
-  <link rel="stylesheet" href="main.css">
-<head>
-  <meta charset="utf-8">
-  <title>Webtris
-  </title>
+<html lang="en">
 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webtris - Share Your 3D Models</title>
+    <link rel="stylesheet" href="landing.css">
 </head>
+
 <body>
-  <iframe 
-    src="EditMode.html"
-    class="editor-embed"
-    allowfullscreen
-    title="3D редактор"
-  ></iframe>
+    <div class="header">
+            <div class="cont1">
+                <div class="heder">Share Your 3D Models</div>
+
+                <p>A community for artists to showcase their 3D creations</p>
+
+                <div class="flex">
+                <a href="#models" class="cta-button">Browse</a>
+                <input type="button" value="Upload" class="cta-button" id="uploadModalBtn"/>
+                </div>
+            </div>
+            <div class="cont2">
+
+            </div>
+    </div>
+
+    <div class="main">
+            <h2>Popular Models</h2>
+            <div class="model-gallery">
+                <div class="model-item">
+                    <img src="model1.png" alt="Model 1">
+                </div>
+                <div class="model-item">
+                    <img src="model2.png" alt="Model 2">
+                </div>
+                <div class="model-item">
+                    <img src="model3.png" alt="Model 3">
+                </div>
+                <div class="model-item">
+                    <img src="model4.png" alt="Model 4">
+                </div>
+            </div>
+            <p>Showcase your artwork, discover, and connect with other artists and more.</p>
+    </div>
+
+    <div class="uploadModal" id="uploadModal">
+        <div class="cont" id="modalCont">
+            <div class="txt">
+                Загрузите модель в формате <b>.glb</b>
+            </div>
+             <button id="uploadBtn">Загрузить</button>
+             <input type="file" id="fileInput" accept=".glb,.gltf,.fbx,.obj" style="display:none">
+        </div>
+    </div>
+
 </body>
+
+    <script src="index.js"></script>
+
 </html>

@@ -1,0 +1,71 @@
+{
+  "name": "enter name",
+  "transform": {
+    "location": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "rotation": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "scale": {
+      "x": 0.7,
+      "y": 0.7,
+      "z": 0.7
+    }
+  },
+  "camera": {
+    "fov": 30,
+    "near": 0.05,
+    "position": {
+      "x": -1,
+      "y": 2,
+      "z": 1.78
+    },
+    "target": {
+      "x": -1,
+      "y": 1,
+      "z": -0.04
+    }
+  },
+  "wireframe": {
+    "toggle": false,
+    "onlyWireframe": false,
+    "color": "#ffffff",
+    "opacity": 1
+  },
+  "background": {
+    "toggle": true,
+    "bgType": "gradient",
+    "flatcolor": "#000000",
+    "gradColor1": "#010101",
+    "gradColor2": "#000000",
+    "gradType": "vertical"
+  },
+  "grid": {
+    "toggle": false,
+    "color": "#111111"
+  },
+  "lighting": {
+    "hdri": {
+      "toggle": true,
+      "image": "/hdri/0/enviroment.hdr",
+      "brightness": 1.1,
+      "rotation": 0
+    }
+  },
+  "materials": {
+    "matType": "primal",
+    "textureSets": [
+      {
+        "baseColor": " ",
+        "roughness": " ",
+        "metallic": " ",
+        "normalMap": " "
+      }
+    ]
+  }
+}

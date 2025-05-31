@@ -10,6 +10,7 @@
     <div class="header"> <!--UpperTab-->
       <div class="cont">
         <input type="button" class="SaveButton" id="saveBtn" value="Save">
+        <input type="button" class="PublishButton" id="publishBtn" value="Publish">
         <div>Currently editing</div>
         <input  id="Model_name" type="text" placeholder="Enter Model Name" maxlength="29"/>
       </div>
@@ -149,7 +150,7 @@
                 <br>
 
                 <label>
-                  <input type="radio" name="bgType" value="gradient">
+                  <input type="radio" name="bgType" value="gradient" checked>
                   Gradient
                 </label>
                 <input type="color" id="bgGradColor1" value="#111111"  class="colorPicker">
@@ -162,7 +163,7 @@
                 
               </div>
               <label id="hdribackgroundCheck">
-                <input type="radio" name="bgType" value="hdri" checked>HDRI background
+                <input type="radio" name="bgType" value="hdri" >HDRI background
               </label>
               <br>
           </div>
@@ -325,7 +326,7 @@
     <div id="togglePreferences">Hide Preferences</div>
   </div>
   
-  <pre  id="debug">debug</pre >
+  <pre  id="debug" style="display: none;">debug</pre >
   <script type="importmap">
     {
       "imports": {
