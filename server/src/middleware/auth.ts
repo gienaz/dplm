@@ -1,32 +1,43 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { JwtPayload, AuthRequest } from '../types/auth';
-import { ErrorResponse } from '../types';
+import { mockDb } from '../data/mockDb';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-export const auth = (req: AuthRequest, res: Response, next: NextFunction) => {
+export interface AuthRequest extends Request {
+  user?: {
+    id: number;
+    email: string;
+  };
+}
+
+interface JwtPayload {
+  id: number;
+  email: string;
+}
+
+export const auth = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void | Response> => {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
+    const token = req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
-      const errorResponse: ErrorResponse = { message: 'Требуется авторизация' };
-      return res.status(401).json(errorResponse);
+      return res.status(401).json({ error: 'Please authenticate.' });
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
-    req.user = decoded;
+    const user = await mockDb.findUserById(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({ error: 'Please authenticate.' });
+    }
+
+    req.user = { id: user.id, email: user.email };
     next();
   } catch (error) {
-    const errorResponse: ErrorResponse = { message: 'Неверный токен авторизации' };
-    res.status(401).json(errorResponse);
+    return res.status(401).json({ error: 'Please authenticate.' });
   }
 };
 
-export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (req.user?.role !== 'admin') {
-    const errorResponse: ErrorResponse = { message: 'Доступ запрещен. Требуются права администратора' };
-    return res.status(403).json(errorResponse);
-  }
-  next();
+export const generateToken = (userId: number, email: string): string => {
+  return jwt.sign({ id: userId, email }, JWT_SECRET, { expiresIn: '24h' });
 }; 

@@ -1,39 +1,39 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
+import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import { ErrorResponse } from './types';
+import dotenv from 'dotenv';
 
-// Маршруты
-import modelRoutes from './routes/models';
 import authRoutes from './routes/auth';
+import modelRoutes from './routes/models';
 
-const app: Express = express();
+export async function createServer() {
+  // Загрузка переменных окружения
+  dotenv.config();
 
-// Промежуточное ПО (Middleware)
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+  const app = express();
 
-// Убедимся, что директория uploads существует
-const uploadsDir = path.join(__dirname, '../uploads');
-app.use('/uploads', express.static(uploadsDir));
+  // Middleware
+  app.use(cors());
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
 
-// Маршруты
-app.get('/', (_req: Request, res: Response) => {
-  res.json({ message: 'Добро пожаловать в API 3D Моделей' });
-});
+  // Статические файлы
+  app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+  app.use('/thumbnails', express.static(path.join(__dirname, '../thumbnails')));
 
-// API Маршруты
-app.use('/api/auth', authRoutes);
-app.use('/api/models', modelRoutes);
+  // Routes
+  app.get('/', (_req, res) => {
+    res.json({ message: 'API 3D моделей работает' });
+  });
 
-// Обработчик ошибок
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err.stack);
-  const errorResponse: ErrorResponse = {
-    message: err.message || 'Что-то пошло не так!'
-  };
-  res.status(500).json(errorResponse);
-});
+  app.use('/api/auth', authRoutes);
+  app.use('/api/models', modelRoutes);
 
-export default app; 
+  // Error handling middleware
+  app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Что-то пошло не так!' });
+  });
+
+  return app;
+} 

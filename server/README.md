@@ -1,64 +1,56 @@
-# API 3D Моделей
+# 3D Models Server
 
-REST API для платформы обмена 3D моделями, построенное на Express.js и TypeScript.
-
-## Технологии
-
-- Node.js
-- Express.js
-- TypeScript
-- Multer (для загрузки файлов)
-- CORS
-- JWT (для аутентификации)
-- bcryptjs (для хэширования паролей)
-
-## Установка
-
-1. Клонируйте репозиторий
-```bash
-git clone <your-repo-url>
-cd server
-```
-
-2. Установите зависимости
-```bash
-npm install
-```
-
-3. Создайте файл .env в корневой директории и добавьте следующие переменные:
-```env
-PORT=3000
-JWT_SECRET=your-super-secret-key-change-in-production
-```
-
-4. Запустите сервер
-```bash
-# Режим разработки с автоперезагрузкой
-npm run dev
-
-# Сборка TypeScript
-npm run build
-
-# Запуск production версии
-npm start
-```
-
-По умолчанию сервер запускается на порту 3000.
+Серверная часть приложения для хранения и управления 3D моделями. Написана на TypeScript с использованием Express.js.
 
 ## Структура проекта
 
 ```
 server/
-  ├── src/
-  │   ├── config/     # Конфигурация (загрузка файлов)
-  │   ├── middleware/ # Промежуточное ПО (auth)
-  │   ├── routes/     # Маршруты API
-  │   ├── types/      # TypeScript интерфейсы
-  │   ├── app.ts      # Конфигурация Express
-  │   └── index.ts    # Точка входа
-  ├── uploads/        # Директория для загруженных файлов
-  ├── package.json
-  └── tsconfig.json
+├── src/
+│   ├── data/         # Работа с данными и mock база данных
+│   ├── middleware/   # Middleware компоненты (auth, validation)
+│   ├── routes/       # Маршруты API
+│   └── types/        # TypeScript типы и интерфейсы
+├── test/             # Тесты
+├── uploads/          # Директория для загруженных 3D моделей
+├── thumbnails/       # Директория для миниатюр моделей
+└── package.json
+```
+
+## Требования
+
+- Node.js (версия 14 или выше)
+- npm (версия 6 или выше)
+
+## Установка
+
+1. Установите зависимости:
+```bash
+npm install
+```
+
+2. Создайте файл `.env` в корневой директории сервера:
+```env
+PORT=3000
+JWT_SECRET=your-secret-key
+```
+
+## Запуск
+
+Для разработки:
+```bash
+npm run dev
+```
+
+Для production:
+```bash
+npm run build
+npm start
+```
+
+Для запуска тестов:
+```bash
+npm test
 ```
 
 ## API Endpoints
@@ -66,137 +58,41 @@ server/
 ### Аутентификация
 
 - `POST /api/auth/register` - Регистрация нового пользователя
-- `POST /api/auth/login` - Вход пользователя
+- `POST /api/auth/login` - Вход в систему
 
-### Модели
+### 3D Модели
 
-- `GET /api/models` - Получить все модели
-- `GET /api/models/:id` - Получить модель по ID
-- `POST /api/models` - Загрузить новую модель (требуется авторизация)
-- `POST /api/models/:id/like` - Поставить лайк модели (требуется авторизация)
-- `GET /api/models/:id/download` - Скачать модель (требуется авторизация)
-- `DELETE /api/models/:id` - Удалить модель (только для админов)
-
-### Параметры запросов
-
-#### POST /api/auth/register
-```json
-{
-  "name": "Имя пользователя",
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
-
-#### POST /api/auth/login
-```json
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
-
-#### GET /api/models
-Поддерживает следующие query-параметры:
-- `page` (число): Номер страницы (по умолчанию: 1)
-- `limit` (число): Количество моделей на странице (по умолчанию: 20)
-- `tag` (строка): Фильтрация по тегу
-- `sort` (строка): Сортировка ('likes', 'downloads', 'recent')
-
-#### POST /api/models
-Multipart form-data с полями:
-- `title` (строка): Название модели
-- `description` (строка): Описание модели
-- `tags` (JSON строка): Массив тегов
-- `model` (файл): STL, OBJ или glTF файл
+- `GET /api/models` - Получение списка моделей с пагинацией
+- `POST /api/models` - Загрузка новой модели (требуется аутентификация)
+- `GET /api/models/:id` - Получение информации о модели
+- `PUT /api/models/:id` - Обновление информации о модели (требуется аутентификация)
+- `DELETE /api/models/:id` - Удаление модели (требуется аутентификация)
+- `POST /api/models/:id/rate` - Оценка модели (требуется аутентификация)
+- `GET /api/models/search` - Поиск моделей
+- `GET /api/models/top-rated` - Получение топ рейтинговых моделей
 
 ## Поддерживаемые форматы файлов
 
-- STL (.stl)
-- OBJ (.obj)
-- glTF (.gltf)
+- .stl
+- .obj
+- .fbx
+- .gltf
+- .glb
 
-Максимальный размер файла: 100MB
+## Ограничения
 
-## Аутентификация
+- Максимальный размер файла: 50MB
+- Требуется аутентификация для загрузки и управления моделями
+- Редактировать и удалять модели может только их владелец
 
-API использует JWT (JSON Web Tokens) для аутентификации. После успешной регистрации или входа, сервер возвращает токен, который нужно включать в заголовок Authorization для защищенных endpoints:
+## Тестирование
 
+Проект включает автоматические тесты:
+- Модульные тесты для middleware
+- Интеграционные тесты для API endpoints
+- Тесты аутентификации и авторизации
+
+Для запуска тестов с покрытием:
 ```bash
-Authorization: Bearer <your-token>
-```
-
-### Роли пользователей
-
-- **Пользователь**: Может загружать, скачивать и лайкать модели
-- **Администратор**: Имеет все права пользователя + может удалять модели
-
-По умолчанию создается один администратор:
-- Email: admin@example.com
-- Пароль: admin123
-
-## Тестирование API
-
-### Примеры cURL запросов
-
-1. Регистрация:
-```bash
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Test User","email":"test@example.com","password":"password123"}'
-```
-
-2. Вход:
-```bash
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123"}'
-```
-
-3. Загрузка модели (с токеном):
-```bash
-curl -X POST http://localhost:3000/api/models \
-  -H "Authorization: Bearer <your-token>" \
-  -F "title=Тестовая модель" \
-  -F "description=Описание модели" \
-  -F "tags=[\"test\", \"example\"]" \
-  -F "model=@path/to/model.stl"
-```
-
-## Ответы API
-
-### Успешный ответ аутентификации
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIs...",
-  "user": {
-    "id": 1,
-    "name": "Test User",
-    "email": "test@example.com",
-    "role": "user"
-  }
-}
-```
-
-### Ответ с ошибкой
-```json
-{
-  "message": "Текст ошибки"
-}
-```
-
-## Разработка
-
-### Сборка проекта
-```bash
-npm run build
-```
-
-### Запуск тестов
-```bash
-npm test
-```
-
-## Лицензия
-
-MIT 
+npm run test:coverage
+``` 
