@@ -3,15 +3,16 @@ import { User, Model3D } from '../types';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../middleware/auth';
 
-// Создание тестового пользователя
+// Создание тестового пользователя с уникальным email
 export const createTestUser = async (): Promise<User & { token: string }> => {
+  const timestamp = Date.now();
   const password = 'password123';
   const hashedPassword = await bcrypt.hash(password, 10);
   
   const user = await db.createUser(
-    'test@example.com',
+    `test${timestamp}@example.com`, // Уникальный email для каждого теста
     hashedPassword,
-    'testuser'
+    `testuser${timestamp}`
   );
   
   const token = generateToken(user.id, user.email);
@@ -29,7 +30,7 @@ export const createTestModel = async (userId: number): Promise<Model3D> => {
     title: 'Тестовая модель',
     description: 'Описание тестовой модели',
     fileName: 'test-model.glb',
-    fileUrl: '/uploads/test-model.glb',
+    fileUrl: '/mock-uploads/test-model.glb', // Используем mock-url для тестов
     thumbnailUrl: '/thumbnails/default.png',
     userId,
     tags: ['тест', '3d']

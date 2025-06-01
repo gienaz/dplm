@@ -4,6 +4,8 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { createServer } from './app';
 import { db } from './data/postgresDb';
+import initMinIO from './scripts/init-minio';
+import config from '../config';
 
 import authRoutes from './routes/auth';
 import modelRoutes from './routes/models';
@@ -20,6 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Статические файлы
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/thumbnails', express.static(path.join(__dirname, '../thumbnails')));
 
 // Routes
 app.get('/', (_req, res) => {
@@ -42,11 +45,24 @@ async function startServer() {
     await db.initDatabase();
     console.log('База данных успешно инициализирована');
     
+    // Инициализация MinIO если включено
+    if (config.useMinIO) {
+      console.log('Инициализация MinIO...');
+      try {
+        await initMinIO();
+        console.log('MinIO успешно инициализирован');
+      } catch (error) {
+        console.error('Ошибка инициализации MinIO:', error);
+        console.log('Продолжаем запуск сервера без MinIO');
+      }
+    }
+    
     const app = await createServer();
     const PORT = process.env.PORT || 3000;
     
     app.listen(PORT, () => {
       console.log(`Сервер запущен на порту ${PORT}`);
+      console.log(`Режим хранения файлов: ${config.useMinIO ? 'MinIO' : 'Локальная файловая система'}`);
     });
   } catch (error) {
     console.error('Ошибка при запуске сервера:', error);

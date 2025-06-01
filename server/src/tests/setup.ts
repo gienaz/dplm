@@ -2,39 +2,22 @@ import { db } from '../data/postgresDb';
 import dotenv from 'dotenv';
 import path from 'path';
 import { Pool } from 'pg';
-import fs from 'fs';
 import config from '../../config';
 import createTestDatabase, { dbConfig } from './createTestDb';
+import { MockStorageService } from '../data/storageService.mock';
+
+// Мокаем модуль storageService для тестов
+jest.mock('../data/storageService', () => {
+  const mockStorageService = new MockStorageService();
+  return {
+    storageService: mockStorageService
+  };
+});
 
 // Загружаем переменные окружения из .env.test, если мы в режиме тестирования
 if (process.env.NODE_ENV === 'test') {
   dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
 }
-
-// Создаем директории для тестовых файлов
-const createDirectories = () => {
-  const uploadsDir = path.join(__dirname, '../../', config.dirs.uploads);
-  const thumbnailsDir = path.join(__dirname, '../../', config.dirs.thumbnails);
-
-  [uploadsDir, thumbnailsDir].forEach(dir => {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-      console.log(`Создана директория: ${dir}`);
-    }
-  });
-
-  // Создаем дефолтную миниатюру, если её нет
-  const defaultThumbnailPath = path.join(thumbnailsDir, 'default.png');
-  if (!fs.existsSync(defaultThumbnailPath)) {
-    // Создаем простое изображение 10x10 пикселей белого цвета
-    const defaultThumbnailContent = Buffer.from(
-      'iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAIAAAACUFjqAAAADElEQVQI12NgGAUkAwABEAABJUCH5AAAAABJRU5ErkJggg==',
-      'base64'
-    );
-    fs.writeFileSync(defaultThumbnailPath, defaultThumbnailContent);
-    console.log('Создана дефолтная миниатюра');
-  }
-};
 
 // Создаем тестовый пул соединений с базой данных для тестов
 const setupTestDb = async () => {
@@ -73,8 +56,8 @@ const setupTestDb = async () => {
 
 // Настройка перед всеми тестами
 beforeAll(async () => {
-  // Создаем необходимые директории
-  createDirectories();
+  // Отключаем использование MinIO для тестов
+  config.useMinIO = false;
   
   // Настраиваем тестовую базу данных
   console.log('Инициализация тестовой базы данных...');
