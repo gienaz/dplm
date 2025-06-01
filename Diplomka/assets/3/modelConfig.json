@@ -1,0 +1,71 @@
+{
+  "name": "Tutto mondo N8",
+  "transform": {
+    "location": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "rotation": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "scale": {
+      "x": 1,
+      "y": 1,
+      "z": 1
+    }
+  },
+  "camera": {
+    "fov": 24,
+    "near": 0.05,
+    "position": {
+      "x": 1.6034302428228044,
+      "y": 1.2468028939201166,
+      "z": 4.450342576318893
+    },
+    "target": {
+      "x": 0.6351476711597246,
+      "y": -0.03467217135707797,
+      "z": 0.024321999321637255
+    }
+  },
+  "wireframe": {
+    "toggle": false,
+    "onlyWireframe": false,
+    "color": "#eeeeee",
+    "opacity": 1
+  },
+  "background": {
+    "toggle": true,
+    "bgType": "gradient",
+    "flatcolor": "#000000",
+    "gradColor1": "#111111",
+    "gradColor2": "#000000",
+    "gradType": "to bottom"
+  },
+  "grid": {
+    "toggle": false,
+    "color": "#111111"
+  },
+  "lighting": {
+    "hdri": {
+      "toggle": true,
+      "image": "hdri/0/enviroment.hdr",
+      "brightness": 1.1,
+      "rotation": 0
+    }
+  },
+  "materials": {
+    "matType": "primal",
+    "textureSets": [
+      {
+        "baseColor": " ",
+        "roughness": " ",
+        "metallic": " ",
+        "normalMap": " "
+      }
+    ]
+  }
+}

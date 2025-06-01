@@ -4,11 +4,20 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { PMREMGenerator } from 'three';
 // --- 1. Загрузка конфига (пример: из localStorage) ---
-const modelIndex = 1;
-const assetPath = `/assets/${modelIndex}/`;
+const modelIndex = localStorage.getItem('selectedModelIndex');
+let assetPath = `/assets/${modelIndex}/`;
 
 // --- 1. Загружаем modelConfig.json ---
 let modelConfig = null;
+
+// Получаем параметры из URL
+const params = new URLSearchParams(window.location.search);
+const isLogo = params.get('isLogo') === 'true';
+
+if(isLogo){
+  assetPath = '/logo3d/';
+}
+
 
 fetch(assetPath + 'modelConfig.json')
   .then(res => res.json())
@@ -48,6 +57,18 @@ if (modelConfig.grid?.toggle) {
   const grid = new THREE.GridHelper(20, 20, modelConfig.grid.color || 0x111111, modelConfig.grid.color || 0x111111);
   scene.add(grid);
 }
+let mixer = null;
+
+
+// --- 8. Рендер-цикл ---
+function animate() {
+  requestAnimationFrame(animate);
+  if (mixer) mixer.update(0.008); // обновляем анимацию, если она есть
+  if(controls) controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
 
 // --- 5. Загрузка модели ---
 const loader = new GLTFLoader();
@@ -83,7 +104,17 @@ loader.load(
         modelConfig.camera.target.y,
         modelConfig.camera.target.z
     )
+    if(isLogo){
+            if (gltf.animations && gltf.animations.length) {
+                  mixer = new THREE.AnimationMixer(model);
+            
+                   mixer.clipAction(gltf.animations[0]).play(); // и т.д.
+                }
+              };
       controls.update();
+
+            
+    
     //frameModel(model,camera,controls);
     
     applyHdriLighting(renderer, scene, modelConfig.lighting, function(loadedEnvMap) {
@@ -104,13 +135,6 @@ loader.load(
   }
 );
 
-// --- 8. Рендер-цикл ---
-function animate() {
-  requestAnimationFrame(animate);
-  controls.update();
-  renderer.render(scene, camera);
-}
-animate();
 
 // --- 9. Resize ---
 window.addEventListener('resize', () => {

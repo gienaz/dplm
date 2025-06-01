@@ -1,0 +1,71 @@
+{
+  "name": "Tutto mondo N16",
+  "transform": {
+    "location": {
+      "x": 0,
+      "y": 2.12,
+      "z": 0
+    },
+    "rotation": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "scale": {
+      "x": 1,
+      "y": 1,
+      "z": 1
+    }
+  },
+  "camera": {
+    "fov": 27,
+    "near": 0.05,
+    "position": {
+      "x": 1.8330111959155695,
+      "y": 1.2805294279738282,
+      "z": 3.577762474422977
+    },
+    "target": {
+      "x": 1.0929765903477904,
+      "y": 0.21516149663206297,
+      "z": -0.42112998938306934
+    }
+  },
+  "wireframe": {
+    "toggle": false,
+    "onlyWireframe": false,
+    "color": "#eeeeee",
+    "opacity": 1
+  },
+  "background": {
+    "toggle": true,
+    "bgType": "gradient",
+    "flatcolor": "#000000",
+    "gradColor1": "#111111",
+    "gradColor2": "#000000",
+    "gradType": "to bottom"
+  },
+  "grid": {
+    "toggle": false,
+    "color": "#111111"
+  },
+  "lighting": {
+    "hdri": {
+      "toggle": true,
+      "image": "hdri/0/enviroment.hdr",
+      "brightness": 1.1,
+      "rotation": 0
+    }
+  },
+  "materials": {
+    "matType": "primal",
+    "textureSets": [
+      {
+        "baseColor": " ",
+        "roughness": " ",
+        "metallic": " ",
+        "normalMap": " "
+      }
+    ]
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "name": "logo",
+  "transform": {
+    "location": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "rotation": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "scale": {
+      "x": 1,
+      "y": 1,
+      "z": 1
+    }
+  },
+  "camera": {
+    "fov": 9,
+    "near": 0.05,
+    "position": {
+      "x": 4.442168308793373,
+      "y": -1.4942164333278471,
+      "z": 0.4329005954870553
+    },
+    "target": {
+      "x": 0.697720898215158,
+      "y": 0.2968101576325811,
+      "z": -1.0791706953127742
+    }
+  },
+  "wireframe": {
+    "toggle": false,
+    "onlyWireframe": false,
+    "color": "#eeeeee",
+    "opacity": 1
+  },
+  "background": {
+    "toggle": false,
+    "bgType": "gradient",
+    "flatcolor": "#000000",
+    "gradColor1": "#111111",
+    "gradColor2": "#000000",
+    "gradType": "to bottom"
+  },
+  "grid": {
+    "toggle": false,
+    "color": "#111111"
+  },
+  "lighting": {
+    "hdri": {
+      "toggle": true,
+      "image": "hdri/1/enviroment.hdr",
+      "brightness": 1.1,
+      "rotation": 0
+    }
+  },
+  "materials": {
+    "matType": "primal",
+    "textureSets": [
+      {
+        "baseColor": " ",
+        "roughness": " ",
+        "metallic": " ",
+        "normalMap": " "
+      }
+    ]
+  }
+}

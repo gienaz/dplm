@@ -1,9 +1,9 @@
 {
-  "name": "enter name",
+  "name": "Tutto modndo N17",
   "transform": {
     "location": {
       "x": 0,
-      "y": 0,
+      "y": 1.48,
       "z": 0
     },
     "rotation": {
@@ -12,38 +12,38 @@
       "z": 0
     },
     "scale": {
-      "x": 0.7,
-      "y": 0.7,
-      "z": 0.7
+      "x": 1,
+      "y": 1,
+      "z": 1
     }
   },
   "camera": {
-    "fov": 30,
+    "fov": 26,
     "near": 0.05,
     "position": {
-      "x": -1,
-      "y": 2,
-      "z": 1.78
+      "x": 3.0930689240345,
+      "y": 2.4507889722770724,
+      "z": 2.984791406575912
     },
     "target": {
-      "x": -1,
-      "y": 1,
-      "z": -0.04
+      "x": 1.8967369882549234,
+      "y": 0.17331546159087918,
+      "z": -0.2783342956424854
     }
   },
   "wireframe": {
     "toggle": false,
     "onlyWireframe": false,
-    "color": "#ffffff",
+    "color": "#eeeeee",
     "opacity": 1
   },
   "background": {
     "toggle": true,
     "bgType": "gradient",
     "flatcolor": "#000000",
-    "gradColor1": "#010101",
+    "gradColor1": "#111111",
     "gradColor2": "#000000",
-    "gradType": "vertical"
+    "gradType": "to bottom"
   },
   "grid": {
     "toggle": false,
@@ -52,7 +52,7 @@
   "lighting": {
     "hdri": {
       "toggle": true,
-      "image": "/hdri/0/enviroment.hdr",
+      "image": "hdri/0/enviroment.hdr",
       "brightness": 1.1,
       "rotation": 0
     }

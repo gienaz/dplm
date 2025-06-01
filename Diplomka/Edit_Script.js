@@ -149,18 +149,23 @@ const loader = new GLTFLoader();
 
 let mixer = null;
 
+let prevTime = performance.now();
 function animate() {
   requestAnimationFrame(animate);
-  if (mixer) mixer.update(0.008); // обновляем анимацию, если она есть
+  const now = performance.now();
+  const delta = (now - prevTime) / 1000; // секунды
+  prevTime = now;
+  if (mixer) mixer.update(delta);
   if (controls) controls.update();
   renderer.render(scene, camera);
 }
-
 animate();
 
+/*
 const modelDataUrl = localStorage.getItem('myGLBModel');
 loader.load(
   modelDataUrl ? modelDataUrl : alert('failed to load model'),
+ // '/logo3d/model.glb',
   (gltf) => {
     const model = gltf.scene;
     scene.add(model);
@@ -173,9 +178,78 @@ loader.load(
     // Если есть анимации, создаём mixer
     if (gltf.animations && gltf.animations.length) {
       mixer = new THREE.AnimationMixer(model);
-      // mixer.clipAction(gltf.animations[0]).play(); // и т.д.
+
+       mixer.clipAction(gltf.animations[0]).play(); // и т.д.
     }
+  });*/
+
+  getLastModel(modelObj => {
+    if (!modelObj || !modelObj.file) {
+      alert('Не удалось загрузить модель из IndexedDB!');
+      return;
+    }
+    // modelObj.file — это ArrayBuffer
+    loader.parse(
+      modelObj.file,
+      '', // путь не нужен, если файл в памяти
+      (gltf) => {
+        const model = gltf.scene;
+        scene.add(model);
+        models.push(model);
+        fillMaterialSlotSelector(models); 
+        saveOriginalMaterials(models);
+        frameModel(model, camera, controls);
+        updateBackground();
+
+        // Если есть анимации, создаём mixer
+        if (gltf.animations && gltf.animations.length) {
+          mixer = new THREE.AnimationMixer(model);
+          mixer.clipAction(gltf.animations[0]).play();
+        }
+      },
+      (error) => {
+        alert('Ошибка при разборе модели: ' + error);
+      }
+    );
   });
+  function openDB(callback) {
+  const request = indexedDB.open('modelsDB', 1);
+
+  request.onupgradeneeded = function(event) {
+    const db = event.target.result;
+    if (!db.objectStoreNames.contains('models')) {
+      db.createObjectStore('models', { keyPath: 'id', autoIncrement: true });
+    }
+  };
+
+  request.onsuccess = function(event) {
+    callback(event.target.result);
+  };
+
+  request.onerror = function() {
+    alert('Ошибка открытия IndexedDB');
+  };
+}
+
+function getLastModel(callback) {
+  openDB(function(db) {
+    const tx = db.transaction('models', 'readonly');
+    const store = tx.objectStore('models');
+    const req = store.openCursor(null, 'prev'); // последний добавленный
+
+    req.onsuccess = function(event) {
+      const cursor = event.target.result;
+      if (cursor) {
+        callback(cursor.value);
+      } else {
+        alert('Модель не найдена!');
+      }
+    };
+    req.onerror = function() {
+      alert('Ошибка при чтении из IndexedDB');
+    };
+  });
+}
 
   
   renderer.shadowMap.enabled = true;
@@ -1075,7 +1149,7 @@ function savePreview(renderer, scene, camera, download = false, cropWidth = 900,
   if(download){
   const a = document.createElement('a');
   a.href = dataURL;
-  a.download = 'screenshot.png';
+  a.download = 'preview.png';
   a.click();}
   // Восстанавливаем параметры
   renderer.setSize(originalSize.x, originalSize.y, false);
