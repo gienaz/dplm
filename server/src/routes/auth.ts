@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { db } from '../data/postgresDb';
-import { generateToken } from '../middleware/auth';
+import { generateToken, auth, AuthRequest } from '../middleware/auth';
 import { loginValidation, registerValidation } from '../middleware/validation';
 
 const router = Router();
@@ -63,6 +63,28 @@ router.post('/login', loginValidation, async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Ошибка при входе:', error);
     return res.status(500).json({ error: 'Ошибка при входе в систему' });
+  }
+});
+
+// Получение информации о текущем пользователе
+router.get('/profile', auth, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Пользователь не авторизован' });
+    }
+    
+    const user = await db.findUserById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+    
+    // Удаляем пароль из ответа
+    const { password, ...userWithoutPassword } = user;
+    
+    return res.status(200).json(userWithoutPassword);
+  } catch (error) {
+    console.error('Ошибка при получении профиля:', error);
+    return res.status(500).json({ error: 'Ошибка при получении информации о пользователе' });
   }
 });
 

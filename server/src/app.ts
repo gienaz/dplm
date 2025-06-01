@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 
 import authRoutes from './routes/auth';
 import modelRoutes from './routes/models';
+import config from '../config';
 
 export async function createServer() {
   // Загрузка переменных окружения
@@ -18,8 +19,11 @@ export async function createServer() {
   app.use(express.urlencoded({ extended: true }));
 
   // Статические файлы
-  app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-  app.use('/thumbnails', express.static(path.join(__dirname, '../thumbnails')));
+  // Если не используем MinIO, то подключаем локальные директории
+  if (!config.useMinIO) {
+    app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+    app.use('/thumbnails', express.static(path.join(__dirname, '../thumbnails')));
+  }
 
   // Routes
   app.get('/', (_req, res) => {
@@ -48,8 +52,12 @@ const setupServerProperties = () => {
   tempApp.use(express.json());
   tempApp.use(express.urlencoded({ extended: true }));
   
-  tempApp.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-  tempApp.use('/thumbnails', express.static(path.join(__dirname, '../thumbnails')));
+  // Статические файлы
+  // Если не используем MinIO, то подключаем локальные директории
+  if (!config.useMinIO) {
+    tempApp.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+    tempApp.use('/thumbnails', express.static(path.join(__dirname, '../thumbnails')));
+  }
   
   tempApp.get('/', (_req, res) => {
     res.json({ message: 'API 3D моделей работает' });

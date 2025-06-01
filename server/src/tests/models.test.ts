@@ -2,23 +2,47 @@ import request from 'supertest';
 import app from '../app';
 import { db } from '../data/postgresDb';
 import { createTestUser, createTestModel, createTestRating } from './testUtils';
-import path from 'path';
-import fs from 'fs';
+import { storageService } from '../data/storageService';
 
-// Перед запуском тестов обеспечиваем наличие каталога uploads
-const uploadsDir = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+// Мокаем сервис хранения, чтобы тесты не зависели от реальной файловой системы или MinIO
+jest.mock('../data/storageService', () => {
+  return {
+    storageService: {
+      uploadFile: jest.fn().mockImplementation((_buffer, filename) => {
+        return Promise.resolve(`/mock-uploads/${filename}`);
+      }),
+      uploadFileFromPath: jest.fn().mockImplementation((_filepath, filename) => {
+        return Promise.resolve(`/mock-uploads/${filename}`);
+      }),
+      getFileUrl: jest.fn().mockImplementation((filename) => {
+        return `/mock-uploads/${filename}`;
+      }),
+      deleteFile: jest.fn().mockResolvedValue(undefined)
+    }
+  };
+});
 
 describe('Models API', () => {
   let testUser: any;
   let testModel: any;
+  let anotherTestUser: any; // Для тестов с разными пользователями
   
   beforeEach(async () => {
     // Создаем тестового пользователя и модель для каждого теста
     testUser = await createTestUser();
     testModel = await createTestModel(testUser.id);
+    
+    // Создаем второго пользователя с другим email
+    const hashedPassword = await require('bcryptjs').hash('password123', 10);
+    anotherTestUser = await db.createUser(
+      `another${Date.now()}@example.com`, // Уникальный email для каждого теста
+      hashedPassword,
+      'anotheruser'
+    );
+    anotherTestUser.token = require('../middleware/auth').generateToken(anotherTestUser.id, anotherTestUser.email);
+    
+    // Очищаем историю вызовов mock-функций
+    jest.clearAllMocks();
   });
 
   describe('GET /api/models', () => {
@@ -71,14 +95,17 @@ describe('Models API', () => {
         title: 'Уникальный заголовок для поиска',
         description: 'Описание',
         fileName: 'test.glb',
-        fileUrl: '/uploads/test.glb',
+        fileUrl: '/mock-uploads/test.glb',
         thumbnailUrl: '/thumbnails/default.png',
         userId: testUser.id,
         tags: ['тест']
       });
       
+      // Кодируем параметры поиска для URL
+      const query = encodeURIComponent('уникальный');
+      
       const response = await request(app)
-        .get('/api/models/search?query=уникальный')
+        .get(`/api/models/search?query=${query}`)
         .expect(200);
       
       expect(response.body).toBeInstanceOf(Array);
@@ -92,14 +119,17 @@ describe('Models API', () => {
         title: 'Модель с тегом',
         description: 'Описание',
         fileName: 'test.glb',
-        fileUrl: '/uploads/test.glb',
+        fileUrl: '/mock-uploads/test.glb',
         thumbnailUrl: '/thumbnails/default.png',
         userId: testUser.id,
         tags: ['уникальный_тег']
       });
       
+      // Кодируем параметры поиска для URL
+      const tag = encodeURIComponent('уникальный_тег');
+      
       const response = await request(app)
-        .get('/api/models/search?tag=уникальный_тег')
+        .get(`/api/models/search?tag=${tag}`)
         .expect(200);
       
       expect(response.body).toBeInstanceOf(Array);
@@ -132,6 +162,47 @@ describe('Models API', () => {
     });
   });
   
+  describe('POST /api/models', () => {
+    it('должен загружать новую модель', async () => {
+      // Создаем тестовый буфер для имитации файла
+      const testBuffer = Buffer.from('test model content');
+      
+      // Тестируем загрузку модели
+      const response = await request(app)
+        .post('/api/models')
+        .set('Authorization', `Bearer ${testUser.token}`)
+        .field('title', 'Новая модель')
+        .field('description', 'Описание новой модели')
+        .field('tags', JSON.stringify(['новая', 'тест']))
+        .attach('model', testBuffer, 'test-upload.glb')
+        .expect(201);
+      
+      // Проверяем, что функция загрузки файла была вызвана
+      expect(storageService.uploadFile).toHaveBeenCalled();
+      
+      // Проверяем ответ
+      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('title', 'Новая модель');
+      expect(response.body).toHaveProperty('description', 'Описание новой модели');
+      expect(response.body).toHaveProperty('userId', testUser.id);
+      expect(response.body.tags).toEqual(expect.arrayContaining(['новая', 'тест']));
+      expect(response.body).toHaveProperty('fileUrl');
+      expect(response.body.fileUrl).toContain('/mock-uploads/');
+    });
+    
+    it('должен возвращать ошибку при отсутствии файла', async () => {
+      const response = await request(app)
+        .post('/api/models')
+        .set('Authorization', `Bearer ${testUser.token}`)
+        .field('title', 'Модель без файла')
+        .field('description', 'Описание')
+        .expect(400);
+      
+      expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toContain('Файл модели не загружен');
+    });
+  });
+  
   describe('PUT /api/models/:id', () => {
     it('должен обновлять модель при наличии прав', async () => {
       const updateData = {
@@ -153,15 +224,11 @@ describe('Models API', () => {
     });
     
     it('должен возвращать 403 при попытке обновить чужую модель', async () => {
-      // Создаем второго пользователя
-      const anotherUser = await createTestUser();
-      anotherUser.email = 'another@example.com';
-      
       const updateData = { title: 'Попытка обновления' };
       
       const response = await request(app)
         .put(`/api/models/${testModel.id}`)
-        .set('Authorization', `Bearer ${anotherUser.token}`)
+        .set('Authorization', `Bearer ${anotherTestUser.token}`)
         .send(updateData)
         .expect(403);
       
@@ -177,6 +244,9 @@ describe('Models API', () => {
         .set('Authorization', `Bearer ${testUser.token}`)
         .expect(200);
       
+      // Проверяем, что был вызов deleteFile
+      expect(storageService.deleteFile).toHaveBeenCalledWith(testModel.fileName);
+      
       expect(response.body).toHaveProperty('message');
       expect(response.body.message).toContain('успешно удалена');
       
@@ -186,14 +256,13 @@ describe('Models API', () => {
     });
     
     it('должен возвращать 403 при попытке удалить чужую модель', async () => {
-      // Создаем второго пользователя
-      const anotherUser = await createTestUser();
-      anotherUser.email = 'another@example.com';
-      
       const response = await request(app)
         .delete(`/api/models/${testModel.id}`)
-        .set('Authorization', `Bearer ${anotherUser.token}`)
+        .set('Authorization', `Bearer ${anotherTestUser.token}`)
         .expect(403);
+      
+      // Проверяем, что deleteFile НЕ был вызван
+      expect(storageService.deleteFile).not.toHaveBeenCalled();
       
       expect(response.body).toHaveProperty('error');
       expect(response.body.error).toContain('Нет прав на удаление');

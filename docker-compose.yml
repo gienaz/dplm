@@ -19,6 +19,27 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio
+    container_name: models3d-minio
+    restart: always
+    ports:
+      - "9000:9000"  # API порт
+      - "9001:9001"  # Консоль управления
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    networks:
+      - app-network
+    command: server --console-address ":9001" /data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   server:
     build:
       context: ./server
@@ -27,6 +48,8 @@ services:
     restart: always
     depends_on:
       postgres:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     environment:
       - PORT=3000
@@ -37,6 +60,12 @@ services:
       - POSTGRES_PORT=5432
       - JWT_SECRET=your_jwt_secret_key_here
       - NODE_ENV=production
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000
+      - MINIO_USE_SSL=false
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET_NAME=models3d
     ports:
       - "3000:3000"
     volumes:
@@ -52,3 +81,4 @@ networks:
 
 volumes:
   postgres_data: 
+  minio_data: 

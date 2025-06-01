@@ -4,37 +4,30 @@ import path from 'path';
 import fs from 'fs';
 import { db } from '../data/postgresDb';
 import { auth, AuthRequest } from '../middleware/auth';
+import { storageService } from '../data/storageService';
+import config from '../../config';
 
 const router = Router();
 
-// Создаем необходимые директории
-const uploadsDir = path.join(__dirname, '../../uploads');
-const thumbnailsDir = path.join(__dirname, '../../thumbnails');
+// Создаем необходимые директории только если не используем MinIO
+if (!config.useMinIO) {
+  const thumbnailsDir = path.join(__dirname, '../../thumbnails');
 
-[uploadsDir, thumbnailsDir].forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(thumbnailsDir)) {
+    fs.mkdirSync(thumbnailsDir, { recursive: true });
   }
-});
 
-// Создаем дефолтную миниатюру, если её нет
-const defaultThumbnailPath = path.join(thumbnailsDir, 'default.png');
-if (!fs.existsSync(defaultThumbnailPath)) {
-  // Создаем простое изображение 200x200 пикселей белого цвета
-  const defaultThumbnailContent = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEwAACxMBAJqcGAAAABZ0RVh0Q3JlYXRpb24gVGltZQAxMC8yOS8yM7rRiVEAAAAcdEVYdFNvZnR3YXJlAEFkb2JlIEZpcmV3b3JrcyBDUzbovLKMAAABJElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOA1v9QAATX68/0AAAAASUVORK5CYII=', 'base64');
-  fs.writeFileSync(defaultThumbnailPath, defaultThumbnailContent);
+  // Создаем дефолтную миниатюру, если её нет
+  const defaultThumbnailPath = path.join(thumbnailsDir, 'default.png');
+  if (!fs.existsSync(defaultThumbnailPath)) {
+    // Создаем простое изображение 200x200 пикселей белого цвета
+    const defaultThumbnailContent = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEwAACxMBAJqcGAAAABZ0RVh0Q3JlYXRpb24gVGltZQAxMC8yOS8yM7rRiVEAAAAcdEVYdFNvZnR3YXJlAEFkb2JlIEZpcmV3b3JrcyBDUzbovLKMAAABJElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOA1v9QAATX68/0AAAAASUVORK5CYII=', 'base64');
+    fs.writeFileSync(defaultThumbnailPath, defaultThumbnailContent);
+  }
 }
 
-// Настройка multer для загрузки файлов
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Настройка multer для временного хранения файлов
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
@@ -162,11 +155,20 @@ router.post('/', auth, upload.single('model'), async (req: AuthRequest, res: Res
     const { title, description, tags } = req.body;
     const parsedTags = tags ? JSON.parse(tags) : [];
 
+    // Генерируем уникальное имя файла
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const fileExt = path.extname(req.file.originalname);
+    const fileName = uniqueSuffix + fileExt;
+    
+    // Загружаем файл в хранилище
+    const contentType = req.file.mimetype || 'application/octet-stream';
+    const fileUrl = await storageService.uploadFile(req.file.buffer, fileName, contentType);
+
     const model = await db.createModel({
       title,
       description,
-      fileName: req.file.filename,
-      fileUrl: `/uploads/${req.file.filename}`,
+      fileName,
+      fileUrl,
       thumbnailUrl: '/thumbnails/default.png',
       userId: req.user.id,
       tags: parsedTags
@@ -227,7 +229,12 @@ router.delete('/:id', auth, async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Нет прав на удаление этой модели' });
     }
 
+    // Удаляем файл из хранилища
+    await storageService.deleteFile(model.fileName);
+    
+    // Удаляем запись из БД
     await db.deleteModel(modelId);
+    
     return res.json({ message: 'Модель успешно удалена' });
   } catch (error) {
     console.error('Ошибка при удалении модели:', error);

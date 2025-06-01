@@ -22,20 +22,20 @@ export const auth = async (req: AuthRequest, res: Response, next: NextFunction):
     const token = req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
-      return res.status(401).json({ error: 'Please authenticate.' });
+      return res.status(401).json({ error: 'Токен не предоставлен' });
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
     const user = await db.findUserById(decoded.id);
 
     if (!user) {
-      return res.status(401).json({ error: 'Please authenticate.' });
+      return res.status(401).json({ error: 'Пользователь не найден' });
     }
 
     req.user = { id: user.id, email: user.email };
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'Please authenticate.' });
+    return res.status(401).json({ error: 'Недействительный токен' });
   }
 };
 

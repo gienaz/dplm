@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import { auth, generateToken, AuthRequest } from '../middleware/auth';
-import { db } from '../data/postgresDb';
-import bcrypt from 'bcryptjs';
+import { createTestUser } from './testUtils';
 
 // Мок для Response
 const mockResponse = () => {
@@ -25,15 +24,11 @@ describe('Auth Middleware', () => {
     let token: string;
     
     beforeEach(async () => {
-      // Создаем пользователя для тестирования middleware
-      user = await db.createUser(
-        'middleware@example.com',
-        await bcrypt.hash('password', 10),
-        'middlewaretester'
-      );
+      // Создаем пользователя для тестирования middleware с уникальным email
+      user = await createTestUser();
       
-      // Генерируем токен для этого пользователя
-      token = generateToken(user.id, user.email);
+      // Используем токен, созданный в createTestUser
+      token = user.token;
     });
     
     it('должен добавлять пользователя в request при валидном токене', async () => {
@@ -67,9 +62,9 @@ describe('Auth Middleware', () => {
       // Проверяем, что был возвращен статус 401
       expect(res.status).toHaveBeenCalledWith(401);
       
-      // Проверяем сообщение об ошибке
+      // Проверяем сообщение об ошибке - обновлено в соответствии с текущей реализацией
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        error: expect.stringMatching(/authenticate/i)
+        error: 'Токен не предоставлен'
       }));
     });
     
@@ -88,9 +83,9 @@ describe('Auth Middleware', () => {
       // Проверяем, что был возвращен статус 401
       expect(res.status).toHaveBeenCalledWith(401);
       
-      // Проверяем сообщение об ошибке
+      // Проверяем сообщение об ошибке - обновлено в соответствии с текущей реализацией
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        error: expect.stringMatching(/authenticate/i)
+        error: 'Недействительный токен'
       }));
     });
   });
