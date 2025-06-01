@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+package-lock.json
+
+# Build
+dist
+
+# Environment
+.env
+.env.test
+
+# IDE
+.vscode
+.idea
+
+# Logs
+logs
+*.log
+
+# Tests
+coverage
+test-files
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+thumbnails/*
+!thumbnails/.gitkeep
+
+# Docker
+.dockerignore 

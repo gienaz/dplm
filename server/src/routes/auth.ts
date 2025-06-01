@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { mockDb } from '../data/mockDb';
+import { db } from '../data/postgresDb';
 import { generateToken } from '../middleware/auth';
 import { loginValidation, registerValidation } from '../middleware/validation';
 
@@ -12,7 +12,7 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
     const { email, password, username } = req.body;
 
     // Проверяем, существует ли пользователь
-    const existingUser = await mockDb.findUserByEmail(email);
+    const existingUser = await db.findUserByEmail(email);
     if (existingUser) {
       return res.status(400).json({ error: 'Пользователь с таким email уже существует' });
     }
@@ -21,7 +21,7 @@ router.post('/register', registerValidation, async (req: Request, res: Response)
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Создаем пользователя
-    const user = await mockDb.createUser(email, hashedPassword, username);
+    const user = await db.createUser(email, hashedPassword, username);
 
     // Генерируем токен
     const token = generateToken(user.id, user.email);
@@ -42,7 +42,7 @@ router.post('/login', loginValidation, async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     // Находим пользователя
-    const user = await mockDb.findUserByEmail(email);
+    const user = await db.findUserByEmail(email);
     if (!user) {
       return res.status(401).json({ error: 'Неверные учетные данные' });
     }

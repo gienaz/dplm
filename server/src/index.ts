@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import dotenv from 'dotenv';
 import { createServer } from './app';
+import { db } from './data/postgresDb';
 
 import authRoutes from './routes/auth';
 import modelRoutes from './routes/models';
@@ -21,7 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.json({ message: 'API 3D моделей работает' });
 });
 
@@ -29,18 +30,28 @@ app.use('/api/auth', authRoutes);
 app.use('/api/models', modelRoutes);
 
 // Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Что-то пошло не так!' });
 });
 
 async function startServer() {
-  const app = await createServer();
-  const PORT = process.env.PORT || 3000;
-  
-  app.listen(PORT, () => {
-    console.log(`Сервер запущен на порту ${PORT}`);
-  });
+  try {
+    // Инициализация базы данных
+    console.log('Инициализация базы данных...');
+    await db.initDatabase();
+    console.log('База данных успешно инициализирована');
+    
+    const app = await createServer();
+    const PORT = process.env.PORT || 3000;
+    
+    app.listen(PORT, () => {
+      console.log(`Сервер запущен на порту ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Ошибка при запуске сервера:', error);
+    process.exit(1);
+  }
 }
 
 startServer().catch(console.error); 
