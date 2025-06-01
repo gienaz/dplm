@@ -190,22 +190,392 @@ http://localhost:9001
 
 ## API Endpoints
 
+Все API-эндпоинты используют формат JSON для передачи данных, за исключением загрузки файлов, где используется multipart/form-data.
+
+### Базовый URL
+
+```
+http://localhost:3000/api
+```
+
 ### Аутентификация
 
-- `POST /api/auth/register` - Регистрация нового пользователя
-- `POST /api/auth/login` - Вход в систему
-- `GET /api/auth/profile` - Получение профиля текущего пользователя
+Все защищенные эндпоинты требуют авторизации через JWT токен, который передается в заголовке:
 
-### Модели
+```
+Authorization: Bearer <token>
+```
 
-- `GET /api/models` - Получение списка всех моделей с пагинацией
-- `GET /api/models/:id` - Получение информации о конкретной модели
-- `GET /api/models/search` - Поиск моделей по заголовку или тегу
-- `GET /api/models/top-rated` - Получение топ-рейтинговых моделей
-- `POST /api/models` - Загрузка новой модели
-- `PUT /api/models/:id` - Обновление информации о модели
-- `DELETE /api/models/:id` - Удаление модели
-- `POST /api/models/:id/rate` - Оценка модели
+#### Регистрация пользователя
+
+```
+POST /auth/register
+```
+
+**Тело запроса:**
+```json
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "username": "username"
+}
+```
+
+**Успешный ответ (201 Created):**
+```json
+{
+  "message": "Пользователь успешно зарегистрирован",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Ошибки:**
+- 400 Bad Request: Некорректный формат данных или пользователь уже существует
+- 500 Internal Server Error: Внутренняя ошибка сервера
+
+#### Авторизация пользователя
+
+```
+POST /auth/login
+```
+
+**Тело запроса:**
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+**Успешный ответ (200 OK):**
+```json
+{
+  "message": "Успешный вход",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Ошибки:**
+- 401 Unauthorized: Неверные учетные данные
+- 500 Internal Server Error: Внутренняя ошибка сервера
+
+#### Получение профиля пользователя
+
+```
+GET /auth/profile
+```
+
+**Заголовки:**
+```
+Authorization: Bearer <token>
+```
+
+**Успешный ответ (200 OK):**
+```json
+{
+  "id": 1,
+  "email": "user@example.com",
+  "username": "username"
+}
+```
+
+**Ошибки:**
+- 401 Unauthorized: Токен не предоставлен или недействителен
+- 404 Not Found: Пользователь не найден
+- 500 Internal Server Error: Внутренняя ошибка сервера
+
+### Работа с 3D-моделями
+
+#### Получение списка моделей
+
+```
+GET /models?page=1&limit=10
+```
+
+**Параметры запроса:**
+- `page` (опционально): Номер страницы, по умолчанию 1
+- `limit` (опционально): Количество моделей на странице, по умолчанию 10
+
+**Успешный ответ (200 OK):**
+```json
+{
+  "models": [
+    {
+      "id": 1,
+      "title": "Название модели",
+      "description": "Описание модели",
+      "fileName": "model.glb",
+      "fileUrl": "http://localhost:9000/models3d/model.glb",
+      "thumbnailUrl": "http://localhost:9000/models3d/model-thumb.png",
+      "userId": 1,
+      "tags": ["тег1", "тег2"]
+    },
+    // ...
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 50,
+    "totalPages": 5
+  }
+}
+```
+
+**Ошибки:**
+- 500 Internal Server Error: Внутренняя ошибка сервера
+
+#### Получение конкретной модели
+
+```
+GET /models/:id
+```
+
+**Успешный ответ (200 OK):**
+```json
+{
+  "id": 1,
+  "title": "Название модели",
+  "description": "Описание модели",
+  "fileName": "model.glb",
+  "fileUrl": "http://localhost:9000/models3d/model.glb",
+  "thumbnailUrl": "http://localhost:9000/models3d/model-thumb.png",
+  "userId": 1,
+  "tags": ["тег1", "тег2"]
+}
+```
+
+**Ошибки:**
+- 404 Not Found: Модель не найдена
+- 500 Internal Server Error: Внутренняя ошибка сервера
+
+#### Поиск моделей
+
+```
+GET /models/search?query=название&tag=тег
+```
+
+**Параметры запроса:**
+- `query` (опционально): Строка для поиска в названии и описании
+- `tag` (опционально): Поиск по тегу
+
+**Успешный ответ (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "title": "Название модели",
+    "description": "Описание модели",
+    "fileName": "model.glb",
+    "fileUrl": "http://localhost:9000/models3d/model.glb",
+    "thumbnailUrl": "http://localhost:9000/models3d/model-thumb.png",
+    "userId": 1,
+    "tags": ["тег1", "тег2"]
+  },
+  // ...
+]
+```
+
+**Ошибки:**
+- 500 Internal Server Error: Внутренняя ошибка сервера
+
+#### Получение топ-рейтинговых моделей
+
+```
+GET /models/top-rated?limit=5
+```
+
+**Параметры запроса:**
+- `limit` (опционально): Количество моделей, по умолчанию 10
+
+**Успешный ответ (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "title": "Название модели",
+    "description": "Описание модели",
+    "fileName": "model.glb",
+    "fileUrl": "http://localhost:9000/models3d/model.glb",
+    "thumbnailUrl": "http://localhost:9000/models3d/model-thumb.png",
+    "userId": 1,
+    "tags": ["тег1", "тег2"],
+    "rating": 4.8
+  },
+  // ...
+]
+```
+
+**Ошибки:**
+- 500 Internal Server Error: Внутренняя ошибка сервера
+
+#### Загрузка новой модели
+
+```
+POST /models
+```
+
+**Заголовки:**
+```
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+**Параметры формы:**
+- `model` (обязательный): Файл 3D-модели (.glb, .gltf, .obj, .stl, .fbx)
+- `title` (обязательный): Название модели
+- `description` (обязательный): Описание модели
+- `tags` (опционально): JSON-строка с массивом тегов, например: `["тег1", "тег2"]`
+
+**Успешный ответ (201 Created):**
+```json
+{
+  "id": 1,
+  "title": "Название модели",
+  "description": "Описание модели",
+  "fileName": "model.glb",
+  "fileUrl": "http://localhost:9000/models3d/model.glb",
+  "thumbnailUrl": "http://localhost:9000/models3d/model-thumb.png",
+  "userId": 1,
+  "tags": ["тег1", "тег2"]
+}
+```
+
+**Ошибки:**
+- 400 Bad Request: Отсутствует файл или некорректные данные
+- 401 Unauthorized: Пользователь не авторизован
+- 500 Internal Server Error: Внутренняя ошибка сервера
+
+#### Обновление информации о модели
+
+```
+PUT /models/:id
+```
+
+**Заголовки:**
+```
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Тело запроса:**
+```json
+{
+  "title": "Обновленное название",
+  "description": "Обновленное описание",
+  "tags": ["новый_тег1", "новый_тег2"]
+}
+```
+
+**Успешный ответ (200 OK):**
+```json
+{
+  "id": 1,
+  "title": "Обновленное название",
+  "description": "Обновленное описание",
+  "fileName": "model.glb",
+  "fileUrl": "http://localhost:9000/models3d/model.glb",
+  "thumbnailUrl": "http://localhost:9000/models3d/model-thumb.png",
+  "userId": 1,
+  "tags": ["новый_тег1", "новый_тег2"]
+}
+```
+
+**Ошибки:**
+- 401 Unauthorized: Пользователь не авторизован
+- 403 Forbidden: Нет прав на редактирование модели
+- 404 Not Found: Модель не найдена
+- 500 Internal Server Error: Внутренняя ошибка сервера
+
+#### Удаление модели
+
+```
+DELETE /models/:id
+```
+
+**Заголовки:**
+```
+Authorization: Bearer <token>
+```
+
+**Успешный ответ (200 OK):**
+```json
+{
+  "message": "Модель успешно удалена"
+}
+```
+
+**Ошибки:**
+- 401 Unauthorized: Пользователь не авторизован
+- 403 Forbidden: Нет прав на удаление модели
+- 404 Not Found: Модель не найдена
+- 500 Internal Server Error: Внутренняя ошибка сервера
+
+#### Оценка модели
+
+```
+POST /models/:id/rate
+```
+
+**Заголовки:**
+```
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Тело запроса:**
+```json
+{
+  "value": 5
+}
+```
+
+**Успешный ответ (200 OK):**
+```json
+{
+  "userId": 1,
+  "modelId": 1,
+  "value": 5
+}
+```
+
+**Ошибки:**
+- 400 Bad Request: Неверное значение оценки (должно быть от 1 до 5)
+- 401 Unauthorized: Пользователь не авторизован
+- 404 Not Found: Модель не найдена
+- 500 Internal Server Error: Внутренняя ошибка сервера
+
+### Коды и сообщения об ошибках
+
+| Код | Описание | Возможная причина |
+|-----|----------|-------------------|
+| 400 | Bad Request | Некорректные данные в запросе |
+| 401 | Unauthorized | Отсутствует токен или он недействителен |
+| 403 | Forbidden | Нет прав на выполнение операции |
+| 404 | Not Found | Запрашиваемый ресурс не найден |
+| 500 | Internal Server Error | Внутренняя ошибка сервера |
+
+### Формат сообщений об ошибках
+
+```json
+{
+  "error": "Описание ошибки"
+}
+```
+
+или для ошибок валидации:
+
+```json
+{
+  "errors": [
+    {
+      "msg": "Описание ошибки 1"
+    },
+    {
+      "msg": "Описание ошибки 2"
+    }
+  ]
+}
+```
 
 ## База данных
 
