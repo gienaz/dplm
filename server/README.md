@@ -585,6 +585,36 @@ Content-Type: application/json
 - `models` - 3D-модели
 - `ratings` - оценки моделей пользователями
 
+### Наполнение базы тестовыми данными
+
+Для разработки и тестирования вы можете наполнить базу данных тестовыми моделями с помощью следующей SQL-команды:
+
+```sql
+WITH new_user AS (
+  INSERT INTO users (email, password, username) 
+  VALUES ('test@example.com', '$2a$10$9KvnQrT0b2LKbKwh.RJ3Vee5WGLBZDqZRQPOYQpGWQvOl5DuCMGc2', 'testuser')
+  RETURNING id
+)
+INSERT INTO models (title, description, file_name, file_url, thumbnail_url, user_id, tags)
+SELECT 
+  title, description, file_name, file_url, thumbnail_url, (SELECT id FROM new_user), tags
+FROM (
+  VALUES 
+    ('Модель стола', 'Современный дизайнерский стол', 'table.glb', '/uploads/table.glb', '/thumbnails/table.png', ARRAY['мебель', 'интерьер']),
+    ('Ваза для цветов', 'Декоративная ваза в минималистичном стиле', 'vase.glb', '/uploads/vase.glb', '/thumbnails/vase.png', ARRAY['декор', 'интерьер']),
+    ('Модель дома', 'Современный загородный дом', 'house.glb', '/uploads/house.glb', '/thumbnails/house.png', ARRAY['архитектура', 'дом']),
+    ('Кресло в стиле лофт', 'Удобное кресло в лофт стиле', 'chair.glb', '/uploads/chair.glb', '/thumbnails/chair.png', ARRAY['мебель', 'лофт']),
+    ('Настольная лампа', 'Светодиодная лампа для рабочего стола', 'lamp.glb', '/uploads/lamp.glb', '/thumbnails/lamp.png', ARRAY['освещение', 'интерьер'])
+) AS t(title, description, file_name, file_url, thumbnail_url, tags);
+```
+
+Эта команда:
+1. Создает тестового пользователя с email `test@example.com` и паролем `password123` (предварительно хешированный)
+2. Добавляет 5 тестовых 3D-моделей с разными параметрами
+3. Связывает все модели с созданным пользователем
+
+Запустить SQL-команду можно через psql или через интерфейс PgAdmin.
+
 ## Тестирование
 
 В проекте реализованы автоматические тесты с использованием Jest и SuperTest. Тесты работают с реальной базой данных PostgreSQL и используют моки для хранилища файлов.
