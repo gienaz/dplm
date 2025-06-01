@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { User, Model3D, Rating } from '../types';
+import config from '../../config';
 
 export interface Database {
   createUser(email: string, password: string, username: string): Promise<User>;
@@ -19,11 +20,11 @@ class PostgresDb implements Database {
 
   constructor() {
     const dbConfig = {
-      user: process.env.POSTGRES_USER || 'postgres',
-      password: process.env.POSTGRES_PASSWORD || 'postgres',
-      host: process.env.POSTGRES_HOST || 'localhost',
-      port: parseInt(process.env.POSTGRES_PORT || '5432'),
-      database: process.env.POSTGRES_DB || 'models3d',
+      user: config.database.user,
+      password: config.database.password,
+      host: config.database.host,
+      port: config.database.port,
+      database: config.database.name,
     };
     
     console.log('Connecting to PostgreSQL with config:', {

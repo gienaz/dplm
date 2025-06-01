@@ -10,6 +10,7 @@
 - PostgreSQL
 - Docker
 - JWT для аутентификации
+- Jest и SuperTest для тестирования
 
 ## Структура проекта
 
@@ -17,7 +18,6 @@
 server/
   ├── src/               - Исходный код на TypeScript
   │   ├── data/          - Работа с данными и БД
-  │   │   ├── mockDb.ts  - Моки для разработки и тестов
   │   │   └── postgresDb.ts - Реализация доступа к PostgreSQL
   │   ├── middleware/    - Промежуточные обработчики
   │   │   ├── auth.ts    - Аутентификация и авторизация
@@ -25,20 +25,23 @@ server/
   │   ├── routes/        - Маршруты API
   │   │   ├── auth.ts    - Маршруты для авторизации
   │   │   └── models.ts  - Маршруты для работы с моделями
+  │   ├── tests/         - Тесты API
+  │   │   ├── auth.test.ts - Тесты авторизации
+  │   │   ├── models.test.ts - Тесты работы с моделями
+  │   │   ├── database.test.ts - Тесты функций БД
+  │   │   ├── middleware.test.ts - Тесты middleware
+  │   │   ├── setup.ts   - Настройка тестового окружения
+  │   │   ├── createTestDb.ts - Создание тестовой БД
+  │   │   └── testUtils.ts - Вспомогательные функции для тестов
   │   ├── types/         - Типы данных
   │   ├── app.ts         - Конфигурация Express приложения
   │   └── index.ts       - Точка входа
-  ├── test/              - Тесты
   ├── uploads/           - Директория для загружаемых моделей
   ├── thumbnails/        - Директория для миниатюр
   ├── docker/            - Docker конфигурация
   │   ├── Dockerfile     - Сборка образа для сервера
-  │   ├── scripts/       - Вспомогательные скрипты
-  │   │   ├── build.js   - Скрипт для сборки TypeScript
-  │   │   ├── docker-manager.ps1 - Управление Docker контейнерами
-  │   │   └── wait-for-postgres.sh - Скрипт ожидания готовности БД
-  │   └── README.md      - Документация по Docker
-  ├── .env               - Переменные окружения (создается автоматически)
+  │   └── scripts/       - Вспомогательные скрипты
+  ├── config.ts          - Конфигурационный файл
   ├── tsconfig.json      - Настройки TypeScript
   └── package.json       - Зависимости и скрипты NPM
 ```
@@ -58,10 +61,10 @@ docker-compose up -d --build
 
 ```powershell
 # Полный запуск (API + PostgreSQL)
-.\server\docker\scripts\docker-manager.ps1 -mode full
+.\docker\scripts\docker-manager.ps1 -mode full
 
 # С полной очисткой Docker (если возникли проблемы)
-.\server\docker\scripts\docker-manager.ps1 -mode full -clean
+.\docker\scripts\docker-manager.ps1 -mode full -clean
 ```
 
 ### Локальная разработка
@@ -69,11 +72,10 @@ docker-compose up -d --build
 Для локальной разработки можно запустить только PostgreSQL в Docker, а сервер запускать локально:
 
 ```bash
-# Запуск только PostgreSQL
+# В корневой директории проекта
 docker-compose up -d postgres
 
-# В отдельном терминале
-cd server
+# В директории server
 npm install
 npm run dev
 ```
@@ -82,8 +84,7 @@ npm run dev
 
 ```powershell
 # Запуск PostgreSQL для локальной разработки
-.\server\docker\scripts\docker-manager.ps1 -mode dev -host localhost
-cd server
+.\docker\scripts\docker-manager.ps1 -mode dev -host localhost
 npm run dev
 ```
 
@@ -93,11 +94,11 @@ npm run dev
 
 ```
 PORT=3000                      # Порт для запуска сервера
-POSTGRES_USER=postgres         # Пользователь PostgreSQL
-POSTGRES_PASSWORD=postgres     # Пароль PostgreSQL
-POSTGRES_DB=models3d           # Имя базы данных
-POSTGRES_HOST=postgres         # Хост PostgreSQL (postgres для Docker, localhost для локальной разработки)
-POSTGRES_PORT=5432             # Порт PostgreSQL
+DB_USER=postgres               # Пользователь PostgreSQL
+DB_PASSWORD=0000               # Пароль PostgreSQL (по умолчанию '0000')
+DB_HOST=localhost              # Хост PostgreSQL (postgres для Docker, localhost для локальной разработки)
+DB_PORT=5432                   # Порт PostgreSQL
+DB_NAME=models3d               # Имя базы данных
 JWT_SECRET=your_secret_key     # Секретный ключ для JWT токенов
 ```
 
@@ -110,32 +111,62 @@ JWT_SECRET=your_secret_key     # Секретный ключ для JWT токе
 
 ### Модели
 
-- `GET /api/models` - Получение списка всех моделей
+- `GET /api/models` - Получение списка всех моделей с пагинацией
 - `GET /api/models/:id` - Получение информации о конкретной модели
+- `GET /api/models/search` - Поиск моделей по заголовку или тегу
+- `GET /api/models/top-rated` - Получение топ-рейтинговых моделей
 - `POST /api/models` - Загрузка новой модели
 - `PUT /api/models/:id` - Обновление информации о модели
 - `DELETE /api/models/:id` - Удаление модели
+- `POST /api/models/:id/rate` - Оценка модели
 
 ## База данных
 
-Приложение использует PostgreSQL в качестве основной базы данных. При первом запуске база данных инициализируется автоматически с созданием необходимых таблиц.
+Приложение использует PostgreSQL в качестве основной базы данных. При первом запуске база данных инициализируется автоматически с созданием необходимых таблиц:
+
+- `users` - пользователи системы
+- `models` - 3D-модели
+- `ratings` - оценки моделей пользователями
 
 ## Тестирование
 
+В проекте реализованы автоматические тесты с использованием Jest и SuperTest. Тесты работают с реальной базой данных PostgreSQL.
+
+### Настройка тестовой базы данных
+
+Перед запуском тестов необходимо:
+
+1. Убедиться, что PostgreSQL запущен и доступен
+2. Проверить настройки подключения в файле `config.ts` 
+3. Запустить скрипт создания тестовой базы данных:
+
 ```bash
-# Запуск тестов
+# Создание тестовой базы данных
+npm run create-test-db
+```
+
+### Запуск тестов
+
+```bash
+# Запуск всех тестов
 npm test
 
-# Запуск тестов с отслеживанием изменений
+# Запуск тестов в режиме watch
 npm run test:watch
 
 # Запуск тестов с отчетом о покрытии
 npm run test:coverage
+
+# Запуск тестов последовательно
+npm run test:sequential
+
+# Запуск отдельного тестового файла
+npm test -- src/tests/auth.test.ts
 ```
 
-## Разработка
+Тестовая база данных очищается после каждого теста, чтобы обеспечить изолированное окружение.
 
-Для разработки используется TypeScript. Исходный код находится в директории `src/`. При сборке код компилируется в JavaScript в директорию `dist/`.
+## Разработка
 
 ```bash
 # Компиляция TypeScript
@@ -146,4 +177,22 @@ npm run dev
 
 # Запуск скомпилированной версии
 npm start
-``` 
+```
+
+## Устранение неполадок
+
+### Проблемы с базой данных
+
+1. Убедитесь, что сервер PostgreSQL запущен
+2. Проверьте, что пользователь 'postgres' существует и имеет пароль, соответствующий указанному в `config.ts` (по умолчанию '0000')
+3. При проблемах с доступом, проверьте настройки аутентификации в PostgreSQL (файл pg_hba.conf)
+4. Для локального подключения может потребоваться метод аутентификации MD5 или trust
+
+### Проблемы с тестами
+
+- Тесты используют отдельную тестовую базу данных `models3d_test`, которая должна быть создана перед запуском тестов
+- Для устранения конфликтов доступа к БД используйте последовательный режим запуска тестов:
+  ```bash
+  npm run test:sequential
+  ```
+- Если тесты не могут подключиться к базе данных, проверьте журналы ошибок на наличие сообщений об аутентификации

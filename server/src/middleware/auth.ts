@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { mockDb } from '../data/mockDb';
+import { db } from '../data/postgresDb';
+import config from '../../config';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || config.jwt.secret;
 
 export interface AuthRequest extends Request {
   user?: {
@@ -25,7 +26,7 @@ export const auth = async (req: AuthRequest, res: Response, next: NextFunction):
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
-    const user = await mockDb.findUserById(decoded.id);
+    const user = await db.findUserById(decoded.id);
 
     if (!user) {
       return res.status(401).json({ error: 'Please authenticate.' });
