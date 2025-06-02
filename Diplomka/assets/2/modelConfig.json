@@ -1,5 +1,5 @@
 {
-  "name": "Tutto modndo N7",
+  "name": "Котик",
   "transform": {
     "location": {
       "x": 0,
@@ -18,41 +18,41 @@
     }
   },
   "camera": {
-    "fov": 31,
+    "fov": 24,
     "near": 0.05,
     "position": {
-      "x": 1.1930392304823805,
-      "y": 2.3163684299769938,
-      "z": 3.8199119854461068
+      "x": 1.6587825924029802,
+      "y": 2.102649738667053,
+      "z": 6.427014051466586
     },
     "target": {
-      "x": 0.07868326213659099,
-      "y": 0.6858591849845831,
-      "z": 0.039181319791633244
+      "x": 0.002633100589414147,
+      "y": 0.7424404755112332,
+      "z": 0.08241068837864314
     }
   },
   "wireframe": {
     "toggle": false,
-    "onlyWireframe": false,
-    "color": "#eeeeee",
-    "opacity": 1
+    "onlyWireframe": true,
+    "color": "#ffffff",
+    "opacity": "1"
   },
   "background": {
-    "toggle": true,
+    "toggle": false,
     "bgType": "gradient",
     "flatcolor": "#000000",
-    "gradColor1": "#111111",
+    "gradColor1": "#006080",
     "gradColor2": "#000000",
     "gradType": "to bottom"
   },
   "grid": {
     "toggle": false,
-    "color": "#111111"
+    "color": "#0d0d0d"
   },
   "lighting": {
     "hdri": {
       "toggle": true,
-      "image": "hdri/0/enviroment.hdr",
+      "image": "hdri/6/enviroment.hdr",
       "brightness": 1.1,
       "rotation": 0
     }

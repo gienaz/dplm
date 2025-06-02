@@ -1,5 +1,5 @@
 {
-  "name": "enter name",
+  "name": "Nissan 350Z",
   "transform": {
     "location": {
       "x": 0,
@@ -12,38 +12,38 @@
       "z": 0
     },
     "scale": {
-      "x": 0.7,
-      "y": 0.7,
-      "z": 0.7
+      "x": 1,
+      "y": 1,
+      "z": 1
     }
   },
   "camera": {
-    "fov": 30,
+    "fov": 14,
     "near": 0.05,
     "position": {
-      "x": -1,
-      "y": 2,
-      "z": 1.78
+      "x": 9.344769272341063,
+      "y": 3.6962269073529153,
+      "z": 10.965595341561016
     },
     "target": {
-      "x": -1,
-      "y": 1,
-      "z": -0.04
+      "x": -0.06241923775615132,
+      "y": 0.5219187660780583,
+      "z": 0.11876448546314045
     }
   },
   "wireframe": {
     "toggle": false,
     "onlyWireframe": false,
-    "color": "#ffffff",
+    "color": "#eeeeee",
     "opacity": 1
   },
   "background": {
     "toggle": true,
     "bgType": "gradient",
     "flatcolor": "#000000",
-    "gradColor1": "#010101",
+    "gradColor1": "#111111",
     "gradColor2": "#000000",
-    "gradType": "vertical"
+    "gradType": "to bottom"
   },
   "grid": {
     "toggle": false,
@@ -52,7 +52,7 @@
   "lighting": {
     "hdri": {
       "toggle": true,
-      "image": "/hdri/0/enviroment.hdr",
+      "image": "hdri/1/enviroment.hdr",
       "brightness": 1.1,
       "rotation": 0
     }

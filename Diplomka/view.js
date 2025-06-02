@@ -3,19 +3,21 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { PMREMGenerator } from 'three';
-// --- 1. Загрузка конфига (пример: из localStorage) ---
-const modelIndex = localStorage.getItem('selectedModelIndex');
-let assetPath = `/assets/${modelIndex}/`;
 
-// --- 1. Загружаем modelConfig.json ---
+let assetPath;
 let modelConfig = null;
 
 // Получаем параметры из URL
 const params = new URLSearchParams(window.location.search);
 const isLogo = params.get('isLogo') === 'true';
+const modelID = params.get('modelID');
 
 if(isLogo){
   assetPath = '/logo3d/';
+} else if (modelID) {
+  assetPath = `/assets/${modelID}/`;
+}else{
+  assetPath = `/assets/${localStorage.getItem('selectedModelIndex')}/`;
 }
 
 
